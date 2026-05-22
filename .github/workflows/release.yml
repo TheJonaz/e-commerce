@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: xml, mbstring, curl, zip, bcmath, intl, sqlite3, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+      - name: Prepare release directory
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGE="open-ecommerce-${VERSION}"
+          mkdir -p "release/$STAGE"
+
+          # Copy everything except dev-only artifacts
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='.idea' \
+            --exclude='.vscode' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='phpunit.xml' \
+            --exclude='.env' \
+            --exclude='database/database.sqlite' \
+            --exclude='storage/install.lock' \
+            --exclude='storage/logs/*.log' \
+            --exclude='storage/framework/cache/data/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            --exclude='release' \
+            ./ "release/$STAGE/"
+
+          echo "STAGE=$STAGE" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create archives
+        working-directory: release
+        run: |
+          zip -rq "${STAGE}.zip" "$STAGE"
+          tar -czf "${STAGE}.tar.gz" "$STAGE"
+          sha256sum "${STAGE}.zip" "${STAGE}.tar.gz" > "${STAGE}.sha256"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ env.VERSION }}
+          generate_release_notes: true
+          files: |
+            release/${{ env.STAGE }}.zip
+            release/${{ env.STAGE }}.tar.gz
+            release/${{ env.STAGE }}.sha256
