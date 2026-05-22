@@ -14,7 +14,7 @@ A modular, self-hostable web shop built with Laravel. Designed to be easy to ins
 
 ## Requirements
 
-- PHP 8.2 or newer with extensions: `xml`, `mbstring`, `curl`, `mysql`/`mysqli`, `zip`, `bcmath`
+- PHP 8.2 or newer with extensions: `xml`, `mbstring`, `curl`, `mysql`/`mysqli`, `zip`, `bcmath`, `intl`
 - MySQL 8 (or MariaDB 10.6+)
 - A web server pointing its document root at `public/`
 

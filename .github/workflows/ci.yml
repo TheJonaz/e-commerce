@@ -21,7 +21,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: xml, mbstring, curl, zip, bcmath, sqlite3, pdo_sqlite
+          extensions: xml, mbstring, curl, zip, bcmath, intl, sqlite3, pdo_sqlite
           coverage: none
           tools: composer:v2
 
