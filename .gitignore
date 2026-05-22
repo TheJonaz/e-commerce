@@ -20,6 +20,8 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/install.lock
+/database/database.sqlite
 /vendor
 _ide_helper.php
 Homestead.json
