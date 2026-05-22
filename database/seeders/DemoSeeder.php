@@ -15,23 +15,24 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = Tenant::create([
-            'slug' => 'demo',
-            'name' => 'Demo Shop',
-            'currency' => 'SEK',
-            'locale' => 'sv',
-            'is_active' => true,
-        ]);
+        $tenant = app()->bound('currentTenant')
+            ? app('currentTenant')
+            : Tenant::firstOrCreate(
+                ['slug' => 'demo'],
+                ['name' => 'Demo Shop', 'currency' => 'SEK', 'locale' => 'sv', 'is_active' => true]
+            );
 
         app()->instance('currentTenant', $tenant);
 
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'tenant_id' => $tenant->id,
-            'role' => User::ROLE_ADMIN,
-        ]);
+        if (! User::where('email', 'admin@example.com')->exists()) {
+            User::create([
+                'name' => 'Admin',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('password'),
+                'tenant_id' => $tenant->id,
+                'role' => User::ROLE_ADMIN,
+            ]);
+        }
 
         $categories = collect([
             ['slug' => 'klader', 'name' => ['sv' => 'Kläder', 'en' => 'Clothing']],
