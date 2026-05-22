@@ -14,9 +14,6 @@ class OrderForm
     {
         return $schema
             ->components([
-                Select::make('tenant_id')
-                    ->relationship('tenant', 'name')
-                    ->required(),
                 Select::make('customer_id')
                     ->relationship('customer', 'name'),
                 TextInput::make('order_number')

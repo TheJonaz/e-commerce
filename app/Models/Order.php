@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'tenant_id', 'customer_id', 'order_number', 'email', 'currency',
+    'customer_id', 'order_number', 'email', 'currency',
     'subtotal_excl_vat', 'vat_total', 'shipping_total', 'discount_total', 'grand_total',
     'status', 'payment_status', 'shipping_status',
     'payment_method', 'payment_reference', 'shipping_method',
@@ -17,8 +16,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Order extends Model
 {
-    use BelongsToTenant;
-
     public const STATUS_PENDING = 'pending';
     public const STATUS_PAID = 'paid';
     public const STATUS_SHIPPED = 'shipped';

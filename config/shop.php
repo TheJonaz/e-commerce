@@ -1,8 +1,6 @@
 <?php
 
 return [
-    'base_domain' => env('SHOP_BASE_DOMAIN', 'e-commerce.thern.io'),
-
     'supported_locales' => ['sv', 'en'],
     'default_locale' => env('SHOP_DEFAULT_LOCALE', 'sv'),
 

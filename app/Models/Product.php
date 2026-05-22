@@ -2,19 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
-    'tenant_id', 'sku', 'slug', 'name', 'short_description', 'description',
+    'sku', 'slug', 'name', 'short_description', 'description',
     'price', 'vat_rate', 'stock', 'type', 'is_active', 'settings',
 ])]
 class Product extends Model
 {
-    use BelongsToTenant;
-
     public const TYPE_PHYSICAL = 'physical';
     public const TYPE_DIGITAL = 'digital';
     public const TYPE_SUBSCRIPTION = 'subscription';

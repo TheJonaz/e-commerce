@@ -15,12 +15,11 @@ class CategoriesTable
     {
         return $table
             ->columns([
-                TextColumn::make('tenant.name')
-                    ->searchable(),
-                TextColumn::make('parent.name')
-                    ->searchable(),
                 TextColumn::make('slug')
                     ->searchable(),
+                TextColumn::make('parent.slug')
+                    ->label('Parent')
+                    ->placeholder('—'),
                 TextColumn::make('position')
                     ->numeric()
                     ->sortable(),

@@ -14,8 +14,6 @@ class OrdersTable
     {
         return $table
             ->columns([
-                TextColumn::make('tenant.name')
-                    ->searchable(),
                 TextColumn::make('customer.name')
                     ->searchable(),
                 TextColumn::make('order_number')

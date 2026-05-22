@@ -20,9 +20,6 @@ class ProductForm
             Section::make('Identification')
                 ->columns(2)
                 ->schema([
-                    Select::make('tenant_id')
-                        ->relationship('tenant', 'name')
-                        ->required(),
                     TextInput::make('sku')->label('SKU'),
                     TextInput::make('slug')->required(),
                     Select::make('type')
@@ -33,6 +30,7 @@ class ProductForm
                         ])
                         ->default(Product::TYPE_PHYSICAL)
                         ->required(),
+                    Toggle::make('is_active')->default(true),
                 ]),
 
             Section::make('Translations')
@@ -60,7 +58,7 @@ class ProductForm
                     TextInput::make('price')
                         ->required()
                         ->numeric()
-                        ->suffix('SEK')
+                        ->suffix(setting('shop.currency', 'SEK'))
                         ->step(0.01)
                         ->helperText('Including VAT'),
                     Select::make('vat_rate')
@@ -71,7 +69,6 @@ class ProductForm
                         ->default((string) number_format(Vat::RATE_STANDARD, 2, '.', ''))
                         ->required(),
                     TextInput::make('stock')->numeric()->minValue(0),
-                    Toggle::make('is_active')->default(true),
                 ]),
         ]);
     }

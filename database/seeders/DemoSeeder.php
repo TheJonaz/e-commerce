@@ -6,7 +6,7 @@ use App\Models\Address;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
-use App\Models\Tenant;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -15,21 +15,17 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = app()->bound('currentTenant')
-            ? app('currentTenant')
-            : Tenant::firstOrCreate(
-                ['slug' => 'demo'],
-                ['name' => 'Demo Shop', 'currency' => 'SEK', 'locale' => 'sv', 'is_active' => true]
-            );
-
-        app()->instance('currentTenant', $tenant);
+        Setting::many([
+            'shop.name' => Setting::get('shop.name', 'Demo Shop'),
+            'shop.currency' => Setting::get('shop.currency', 'SEK'),
+            'shop.locale' => Setting::get('shop.locale', 'sv'),
+        ]);
 
         if (! User::where('email', 'admin@example.com')->exists()) {
             User::create([
                 'name' => 'Admin',
                 'email' => 'admin@example.com',
                 'password' => Hash::make('password'),
-                'tenant_id' => $tenant->id,
                 'role' => User::ROLE_ADMIN,
             ]);
         }
@@ -40,7 +36,10 @@ class DemoSeeder extends Seeder
             ['slug' => 'accessoarer', 'name' => ['sv' => 'Accessoarer', 'en' => 'Accessories']],
             ['slug' => 'bocker', 'name' => ['sv' => 'Böcker', 'en' => 'Books']],
             ['slug' => 'mat', 'name' => ['sv' => 'Mat & Dryck', 'en' => 'Food & Drink']],
-        ])->map(fn ($c, $i) => Category::create([...$c, 'position' => $i]));
+        ])->map(fn ($c, $i) => Category::firstOrCreate(
+            ['slug' => $c['slug']],
+            ['name' => $c['name'], 'position' => $i]
+        ));
 
         $products = [
             ['Bomullströja', 'T-shirt cotton', 299.00, 25, 'klader', 'TSHIRT-001'],
@@ -66,21 +65,23 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($products as $i => [$sv, $en, $price, $vat, $catSlug, $sku]) {
-            $product = Product::create([
-                'sku' => $sku,
-                'slug' => str($sv)->slug()->toString(),
-                'name' => ['sv' => $sv, 'en' => $en],
-                'short_description' => ['sv' => "Kort beskrivning av $sv.", 'en' => "Short description of $en."],
-                'description' => ['sv' => "Lång beskrivning av $sv. Lorem ipsum dolor sit amet.", 'en' => "Long description of $en. Lorem ipsum dolor sit amet."],
-                'price' => $price,
-                'vat_rate' => $vat,
-                'stock' => rand(5, 100),
-                'type' => Product::TYPE_PHYSICAL,
-                'is_active' => true,
-            ]);
+            $product = Product::firstOrCreate(
+                ['sku' => $sku],
+                [
+                    'slug' => str($sv)->slug()->toString(),
+                    'name' => ['sv' => $sv, 'en' => $en],
+                    'short_description' => ['sv' => "Kort beskrivning av $sv.", 'en' => "Short description of $en."],
+                    'description' => ['sv' => "Lång beskrivning av $sv. Lorem ipsum dolor sit amet.", 'en' => "Long description of $en. Lorem ipsum dolor sit amet."],
+                    'price' => $price,
+                    'vat_rate' => $vat,
+                    'stock' => rand(5, 100),
+                    'type' => Product::TYPE_PHYSICAL,
+                    'is_active' => true,
+                ]
+            );
 
             $category = $categories->firstWhere('slug', $catSlug);
-            if ($category) {
+            if ($category && ! $product->categories->contains($category->id)) {
                 $product->categories()->attach($category->id, ['position' => $i]);
             }
         }
@@ -92,27 +93,26 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($customers as [$email, $name, $phone]) {
-            $customer = Customer::create([
-                'email' => $email,
-                'name' => $name,
-                'phone' => $phone,
-                'accepts_marketing' => false,
-            ]);
+            $customer = Customer::firstOrCreate(
+                ['email' => $email],
+                ['name' => $name, 'phone' => $phone, 'accepts_marketing' => false]
+            );
 
-            Address::create([
-                'customer_id' => $customer->id,
-                'type' => Address::TYPE_SHIPPING,
-                'name' => $name,
-                'street' => 'Storgatan ' . rand(1, 99),
-                'zip' => sprintf('%05d', rand(10000, 99999)),
-                'city' => 'Stockholm',
-                'country' => 'SE',
-                'phone' => $phone,
-                'is_default' => true,
-            ]);
+            if ($customer->wasRecentlyCreated) {
+                Address::create([
+                    'customer_id' => $customer->id,
+                    'type' => Address::TYPE_SHIPPING,
+                    'name' => $name,
+                    'street' => 'Storgatan ' . rand(1, 99),
+                    'zip' => sprintf('%05d', rand(10000, 99999)),
+                    'city' => 'Stockholm',
+                    'country' => 'SE',
+                    'phone' => $phone,
+                    'is_default' => true,
+                ]);
+            }
         }
 
-        $this->command?->info("Demo tenant '{$tenant->slug}' seeded with {$categories->count()} categories, " . count($products) . " products, " . count($customers) . " customers.");
-        $this->command?->info("Admin login: admin@example.com / password");
+        $this->command?->info("Seeded {$categories->count()} categories, " . count($products) . " products, " . count($customers) . " customers.");
     }
 }

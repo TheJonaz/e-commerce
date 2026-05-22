@@ -92,27 +92,22 @@
             </label>
         </div>
 
-        <h2>First shop (tenant)</h2>
-        <div class="row">
-            <label>Slug <small>(used in subdomain)</small>
-                <input type="text" name="tenant_slug" value="{{ $old['tenant_slug'] ?? 'shop' }}" pattern="[a-z0-9-]+" required>
-            </label>
-            <label>Display name
-                <input type="text" name="tenant_name" value="{{ $old['tenant_name'] ?? '' }}" required>
-            </label>
-        </div>
+        <h2>Shop</h2>
+        <label>Shop name
+            <input type="text" name="shop_name" value="{{ $old['shop_name'] ?? '' }}" required>
+        </label>
         <div class="row">
             <label>Currency
-                <select name="tenant_currency">
+                <select name="shop_currency">
                     @foreach (['SEK', 'EUR', 'USD', 'NOK', 'DKK'] as $cur)
-                        <option value="{{ $cur }}" {{ ($old['tenant_currency'] ?? 'SEK') === $cur ? 'selected' : '' }}>{{ $cur }}</option>
+                        <option value="{{ $cur }}" {{ ($old['shop_currency'] ?? 'SEK') === $cur ? 'selected' : '' }}>{{ $cur }}</option>
                     @endforeach
                 </select>
             </label>
-            <label>Locale
-                <select name="tenant_locale">
-                    <option value="sv" {{ ($old['tenant_locale'] ?? 'sv') === 'sv' ? 'selected' : '' }}>Svenska</option>
-                    <option value="en" {{ ($old['tenant_locale'] ?? '') === 'en' ? 'selected' : '' }}>English</option>
+            <label>Language
+                <select name="shop_locale">
+                    <option value="sv" {{ ($old['shop_locale'] ?? 'sv') === 'sv' ? 'selected' : '' }}>Svenska</option>
+                    <option value="en" {{ ($old['shop_locale'] ?? '') === 'en' ? 'selected' : '' }}>English</option>
                 </select>
             </label>
         </div>

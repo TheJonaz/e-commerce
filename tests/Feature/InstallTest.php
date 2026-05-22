@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Tenant;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -48,10 +48,10 @@ class InstallTest extends TestCase
     public function test_validation_errors(): void
     {
         $this->post('/install', [])
-            ->assertSessionHasErrors(['db_connection', 'db_database', 'admin_name', 'admin_email', 'admin_password', 'tenant_slug', 'tenant_name']);
+            ->assertSessionHasErrors(['db_connection', 'db_database', 'admin_name', 'admin_email', 'admin_password', 'shop_name']);
     }
 
-    public function test_creates_tenant_and_admin_and_locks(): void
+    public function test_creates_admin_settings_and_locks(): void
     {
         $this->post('/install', [
             'db_connection' => 'sqlite',
@@ -59,16 +59,15 @@ class InstallTest extends TestCase
             'admin_name' => 'Test Admin',
             'admin_email' => 'admin@example.test',
             'admin_password' => 'secret123',
-            'tenant_slug' => 'first',
-            'tenant_name' => 'First Shop',
-            'tenant_currency' => 'SEK',
-            'tenant_locale' => 'sv',
+            'shop_name' => 'My Test Shop',
+            'shop_currency' => 'SEK',
+            'shop_locale' => 'sv',
         ])->assertRedirect('/');
 
         $this->assertFileExists(storage_path('install.lock'));
-        $this->assertSame(1, Tenant::count());
-        $this->assertSame('first', Tenant::first()->slug);
         $this->assertSame(1, User::count());
         $this->assertSame(User::ROLE_ADMIN, User::first()->role);
+        $this->assertSame('My Test Shop', Setting::get('shop.name'));
+        $this->assertSame('SEK', Setting::get('shop.currency'));
     }
 }

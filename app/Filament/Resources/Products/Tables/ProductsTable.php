@@ -15,7 +15,6 @@ class ProductsTable
     {
         return $table
             ->columns([
-                TextColumn::make('tenant.name')->label('Shop')->searchable(),
                 TextColumn::make('sku')->label('SKU')->searchable(),
                 TextColumn::make('name')
                     ->label('Name')
@@ -24,7 +23,7 @@ class ProductsTable
                         $query->where('name', 'like', "%{$search}%");
                     }),
                 TextColumn::make('price')
-                    ->money(fn ($record) => $record->tenant?->currency ?? 'SEK')
+                    ->money(fn () => setting('shop.currency', 'SEK'))
                     ->sortable(),
                 TextColumn::make('vat_rate')->suffix(' %')->sortable(),
                 TextColumn::make('stock')->numeric()->sortable(),

@@ -15,8 +15,6 @@ class CustomersTable
     {
         return $table
             ->columns([
-                TextColumn::make('tenant.name')
-                    ->searchable(),
                 TextColumn::make('email')
                     ->label('Email address')
                     ->searchable(),

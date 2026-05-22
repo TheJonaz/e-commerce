@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\InstallController;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Tenant;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/install', [InstallController::class, 'show'])->name('install');
@@ -15,11 +15,12 @@ Route::get('/', function () {
     }
 
     return view('landing', [
+        'shopName' => setting('shop.name', config('app.name')),
+        'currency' => setting('shop.currency', 'SEK'),
         'stats' => [
-            'tenants' => Tenant::count(),
-            'products' => Product::withoutGlobalScope('tenant')->count(),
-            'orders' => Order::withoutGlobalScope('tenant')->count(),
+            'products' => Product::count(),
+            'categories' => Category::count(),
+            'orders' => Order::count(),
         ],
-        'tenants' => Tenant::orderBy('name')->get(),
     ]);
 });

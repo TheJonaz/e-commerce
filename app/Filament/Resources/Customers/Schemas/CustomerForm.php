@@ -14,9 +14,6 @@ class CustomerForm
     {
         return $schema
             ->components([
-                Select::make('tenant_id')
-                    ->relationship('tenant', 'name')
-                    ->required(),
                 TextInput::make('email')
                     ->label('Email address')
                     ->email()

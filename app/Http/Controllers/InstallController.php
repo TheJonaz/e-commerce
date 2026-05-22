@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tenant;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,10 +43,9 @@ class InstallController extends Controller
             'admin_email' => ['required', 'email'],
             'admin_password' => ['required', 'string', 'min:8'],
 
-            'tenant_slug' => ['required', 'string', 'alpha_dash', 'max:64'],
-            'tenant_name' => ['required', 'string', 'max:255'],
-            'tenant_currency' => ['required', 'string', 'size:3'],
-            'tenant_locale' => ['required', 'string', 'in:sv,en'],
+            'shop_name' => ['required', 'string', 'max:255'],
+            'shop_currency' => ['required', 'string', 'size:3'],
+            'shop_locale' => ['required', 'string', 'in:sv,en'],
 
             'seed_demo' => ['nullable', 'boolean'],
         ]);
@@ -68,16 +67,13 @@ class InstallController extends Controller
             Artisan::call('migrate', ['--force' => true]);
         }
 
-        $tenant = Tenant::create([
-            'slug' => $data['tenant_slug'],
-            'name' => $data['tenant_name'],
-            'currency' => strtoupper($data['tenant_currency']),
-            'locale' => $data['tenant_locale'],
-            'is_active' => true,
+        Setting::many([
+            'shop.name' => $data['shop_name'],
+            'shop.currency' => strtoupper($data['shop_currency']),
+            'shop.locale' => $data['shop_locale'],
         ]);
 
         User::create([
-            'tenant_id' => $tenant->id,
             'name' => $data['admin_name'],
             'email' => $data['admin_email'],
             'password' => Hash::make($data['admin_password']),
@@ -85,7 +81,6 @@ class InstallController extends Controller
         ]);
 
         if (! empty($data['seed_demo'])) {
-            app()->instance('currentTenant', $tenant);
             Artisan::call('db:seed', ['--class' => 'DemoSeeder', '--force' => true]);
         }
 
@@ -151,6 +146,7 @@ class InstallController extends Controller
             'DB_DATABASE' => $data['db_database'],
             'DB_USERNAME' => $data['db_username'] ?? '',
             'DB_PASSWORD' => $data['db_password'] ?? '',
+            'APP_LOCALE' => $data['shop_locale'],
         ];
 
         foreach ($patch as $key => $value) {

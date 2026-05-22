@@ -10,15 +10,12 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->string('email');
+            $table->string('email')->unique();
             $table->string('name');
             $table->string('phone')->nullable();
             $table->boolean('accepts_marketing')->default(false);
             $table->text('notes')->nullable();
             $table->timestamps();
-
-            $table->unique(['tenant_id', 'email']);
         });
     }
 

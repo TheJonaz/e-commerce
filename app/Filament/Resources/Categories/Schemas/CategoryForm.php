@@ -14,11 +14,9 @@ class CategoryForm
     {
         return $schema
             ->components([
-                Select::make('tenant_id')
-                    ->relationship('tenant', 'name')
-                    ->required(),
                 Select::make('parent_id')
-                    ->relationship('parent', 'name'),
+                    ->relationship('parent', 'slug')
+                    ->searchable(),
                 TextInput::make('slug')
                     ->required(),
                 Textarea::make('name')

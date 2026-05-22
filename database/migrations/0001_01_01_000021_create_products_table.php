@@ -10,9 +10,8 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->string('sku')->nullable();
-            $table->string('slug');
+            $table->string('sku')->nullable()->unique();
+            $table->string('slug')->unique();
             $table->json('name');
             $table->json('short_description')->nullable();
             $table->json('description')->nullable();
@@ -24,9 +23,7 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'slug']);
-            $table->index(['tenant_id', 'is_active']);
-            $table->index(['tenant_id', 'sku']);
+            $table->index('is_active');
         });
     }
 
