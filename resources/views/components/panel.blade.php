@@ -29,22 +29,22 @@
     class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10"
     style="margin-bottom: 1.5rem"
 >
-    <header class="flex items-center justify-between gap-2 px-6 py-3" :class="state === 'collapsed' ? '' : 'border-b border-gray-200 dark:border-gray-800'" style="border-bottom-style: solid; border-bottom-width: 1px;" x-bind:style="state === 'collapsed' ? 'border-bottom: 0' : ''">
-        <h3 class="text-base font-semibold text-gray-950 dark:text-white" style="margin: 0">{{ $heading }}</h3>
-        <div style="display: inline-flex; gap: 0.25rem">
+    <header class="flex items-center justify-between" style="padding: 0 0 0 1.5rem; min-height: 44px; border-bottom: 1px solid rgba(0,0,0,0.08);" x-bind:style="state === 'collapsed' ? 'border-bottom: 0' : ''">
+        <h3 class="text-base font-semibold text-gray-950 dark:text-white" style="margin: 0; padding: 0.5rem 0">{{ $heading }}</h3>
+        <div style="display: inline-flex; margin-left: auto; align-self: stretch;">
             <button type="button" @click="toggleCollapse"
                 title="Minimera"
-                x-text="state === 'collapsed' ? '+' : '—'"
-                style="width: 1.7rem; height: 1.7rem; line-height: 1; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); background: transparent; color: #64748b; cursor: pointer; font-weight: 700; font-size: 0.9rem;"
-                onmouseover="this.style.background='rgba(0,0,0,0.04)'"
+                x-text="state === 'collapsed' ? '☐' : '–'"
+                style="width: 46px; line-height: 1; border: 0; border-radius: 0; background: transparent; color: #334155; cursor: pointer; font-weight: 400; font-size: 1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
+                onmouseover="this.style.background='rgba(0,0,0,0.06)'"
                 onmouseout="this.style.background='transparent'"
             ></button>
             <button type="button" @click="close"
                 title="Stäng"
-                style="width: 1.7rem; height: 1.7rem; line-height: 1; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); background: transparent; color: #64748b; cursor: pointer; font-weight: 700; font-size: 1rem;"
-                onmouseover="this.style.background='rgba(220,38,38,0.08)'; this.style.color='#dc2626'"
-                onmouseout="this.style.background='transparent'; this.style.color='#64748b'"
-            >×</button>
+                style="width: 46px; line-height: 1; border: 0; border-radius: 0 0.75rem 0 0; background: transparent; color: #334155; cursor: pointer; font-weight: 400; font-size: 1.05rem; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
+                onmouseover="this.style.background='#e81123'; this.style.color='white'"
+                onmouseout="this.style.background='transparent'; this.style.color='#334155'"
+            >✕</button>
         </div>
     </header>
     <div x-show="state === 'open'" x-collapse class="px-6 py-4">
