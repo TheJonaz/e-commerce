@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Support\Vat;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -34,16 +35,31 @@ class ProductForm
                     Toggle::make('is_active')->default(true),
                 ]),
 
-            Section::make('Image')
+            Section::make('Images')
                 ->schema([
-                    FileUpload::make('image_path')
-                        ->label('Product image')
-                        ->image()
-                        ->imageEditor()
-                        ->disk('shop')
-                        ->directory('products')
-                        ->maxSize(4096)
-                        ->columnSpanFull(),
+                    Repeater::make('images')
+                        ->relationship()
+                        ->orderColumn('position')
+                        ->reorderable()
+                        ->collapsed()
+                        ->itemLabel(fn (array $state): ?string => $state['alt']['sv'] ?? $state['path'] ?? 'Bild')
+                        ->columnSpanFull()
+                        ->schema([
+                            FileUpload::make('path')
+                                ->label('Bild')
+                                ->image()
+                                ->imageEditor()
+                                ->disk('shop')
+                                ->directory('products')
+                                ->maxSize(4096)
+                                ->required()
+                                ->columnSpanFull(),
+                            KeyValue::make('alt')
+                                ->keyLabel('Locale')
+                                ->valueLabel('Alt text (för skärmläsare/SEO)')
+                                ->default(['sv' => '', 'en' => ''])
+                                ->columnSpanFull(),
+                        ]),
                 ]),
 
             Section::make('Translations')

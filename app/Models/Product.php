@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'sku', 'slug', 'name', 'short_description', 'description',
@@ -35,6 +36,11 @@ class Product extends Model
         return $this->belongsToMany(Category::class)->withPivot('position');
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position');
+    }
+
     public function priceExclVat(): float
     {
         return round((float) $this->price / (1 + ((float) $this->vat_rate / 100)), 2);
@@ -62,11 +68,20 @@ class Product extends Model
 
     public function imageUrl(): ?string
     {
-        if (! $this->image_path) {
-            return null;
+        $first = $this->relationLoaded('images')
+            ? $this->images->first()
+            : $this->images()->first();
+
+        if ($first) {
+            return $first->url();
         }
 
-        return rtrim(config('filesystems.disks.shop.url'), '/').'/'.ltrim($this->image_path, '/');
+        // Legacy single-image fallback for products created before the gallery.
+        if ($this->image_path) {
+            return rtrim(config('filesystems.disks.shop.url'), '/').'/'.ltrim($this->image_path, '/');
+        }
+
+        return null;
     }
 
     public function localized(string $field, ?string $locale = null): string

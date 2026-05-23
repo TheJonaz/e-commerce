@@ -486,4 +486,32 @@ class ShopFlowTest extends TestCase
             ->assertOk()
             ->assertJson(['results' => []]);
     }
+
+    public function test_product_gallery_renders_main_image_and_thumbs(): void
+    {
+        $product = Product::first();
+        $product->images()->createMany([
+            ['path' => 'products/a.jpg', 'alt' => ['sv' => 'Bild A'], 'position' => 0],
+            ['path' => 'products/b.jpg', 'alt' => ['sv' => 'Bild B'], 'position' => 1],
+            ['path' => 'products/c.jpg', 'alt' => ['sv' => 'Bild C'], 'position' => 2],
+        ]);
+
+        $this->get(route('shop.product', $product->slug))
+            ->assertOk()
+            ->assertSee('product-gallery-img', escape: false)
+            ->assertSee('products/a.jpg', escape: false)
+            ->assertSee('gallery-thumb', escape: false)
+            ->assertSee('products/c.jpg', escape: false);
+    }
+
+    public function test_product_image_url_falls_back_to_legacy_image_path(): void
+    {
+        $product = Product::create([
+            'sku' => 'IMG-LEGACY', 'slug' => 'legacy-img',
+            'name' => ['sv' => 'Legacy'], 'price' => 1, 'vat_rate' => 25, 'is_active' => true,
+            'image_path' => 'products/old.jpg',
+        ]);
+
+        $this->assertStringContainsString('products/old.jpg', (string) $product->imageUrl());
+    }
 }

@@ -11,11 +11,42 @@
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; margin-top: 1rem;">
-        <div style="aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%); display: flex; align-items: center; justify-content: center; color: #d6d3d1; font-size: 6rem;">
-            @if ($product->imageUrl())
-                <img src="{{ $product->imageUrl() }}" alt="{{ $product->localized('name') }}" style="width: 100%; height: 100%; object-fit: cover;">
-            @else
-                🛍
+        <div>
+            @php $images = $product->images; @endphp
+            <div id="product-gallery-main" style="aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%); display: flex; align-items: center; justify-content: center; color: #d6d3d1; font-size: 6rem;">
+                @if ($images->isNotEmpty())
+                    <img id="product-gallery-img" src="{{ $images->first()->url() }}" alt="{{ $images->first()->localizedAlt() ?: $product->localized('name') }}" style="width: 100%; height: 100%; object-fit: cover;">
+                @elseif ($product->imageUrl())
+                    <img id="product-gallery-img" src="{{ $product->imageUrl() }}" alt="{{ $product->localized('name') }}" style="width: 100%; height: 100%; object-fit: cover;">
+                @else
+                    🛍
+                @endif
+            </div>
+
+            @if ($images->count() > 1)
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 0.5rem; margin-top: 0.75rem;">
+                    @foreach ($images as $img)
+                        <button type="button"
+                            data-src="{{ $img->url() }}"
+                            data-alt="{{ $img->localizedAlt() ?: $product->localized('name') }}"
+                            class="gallery-thumb {{ $loop->first ? 'active' : '' }}"
+                            style="aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; border: 2px solid {{ $loop->first ? 'var(--primary)' : 'transparent' }}; cursor: pointer; padding: 0; background: var(--card); transition: border-color 0.15s;">
+                            <img src="{{ $img->url() }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                        </button>
+                    @endforeach
+                </div>
+                <script>
+                    (function () {
+                        const main = document.getElementById('product-gallery-img');
+                        const thumbs = document.querySelectorAll('.gallery-thumb');
+                        thumbs.forEach(t => t.addEventListener('click', () => {
+                            main.src = t.dataset.src;
+                            main.alt = t.dataset.alt || '';
+                            thumbs.forEach(other => other.style.borderColor = 'transparent');
+                            t.style.borderColor = 'var(--primary)';
+                        }));
+                    })();
+                </script>
             @endif
         </div>
 

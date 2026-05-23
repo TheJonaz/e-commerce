@@ -92,7 +92,7 @@ class ShopController extends Controller
 
     public function product(string $slug)
     {
-        $product = Product::with('categories')
+        $product = Product::with(['categories', 'images'])
             ->where('slug', $slug)
             ->where('is_active', true)
             ->firstOrFail();
