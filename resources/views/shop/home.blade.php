@@ -17,7 +17,11 @@
     <div class="product-grid">
         @foreach ($featured as $product)
             <a class="product-card" href="{{ route('shop.product', $product->slug) }}">
-                <div class="ph">🛍</div>
+                @if ($product->imageUrl())
+                    <img src="{{ $product->imageUrl() }}" alt="{{ $product->localized('name') }}" style="aspect-ratio: 1/1; object-fit: cover;">
+                @else
+                    <div class="ph">🛍</div>
+                @endif
                 <div class="body">
                     <div class="name">{{ $product->localized('name') }}</div>
                     <div class="price">{{ App\Support\Money::format($product->price, setting('shop.currency', 'SEK')) }}</div>

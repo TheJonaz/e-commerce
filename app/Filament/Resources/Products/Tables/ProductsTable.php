@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -15,6 +16,7 @@ class ProductsTable
     {
         return $table
             ->columns([
+                ImageColumn::make('image_path')->label('')->disk('shop')->circular()->size(40),
                 TextColumn::make('sku')->label('SKU')->searchable(),
                 TextColumn::make('name')
                     ->label('Name')

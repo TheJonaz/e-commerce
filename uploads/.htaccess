@@ -1,0 +1,4 @@
+# Allow direct serving of uploads but block any PHP execution.
+<FilesMatch "\.(php|phtml|phar)$">
+    Require all denied
+</FilesMatch>

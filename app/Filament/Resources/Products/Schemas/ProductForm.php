@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
 use App\Support\Vat;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -31,6 +32,18 @@ class ProductForm
                         ->default(Product::TYPE_PHYSICAL)
                         ->required(),
                     Toggle::make('is_active')->default(true),
+                ]),
+
+            Section::make('Image')
+                ->schema([
+                    FileUpload::make('image_path')
+                        ->label('Product image')
+                        ->image()
+                        ->imageEditor()
+                        ->disk('shop')
+                        ->directory('products')
+                        ->maxSize(4096)
+                        ->columnSpanFull(),
                 ]),
 
             Section::make('Translations')

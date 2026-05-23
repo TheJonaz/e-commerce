@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'sku', 'slug', 'name', 'short_description', 'description',
-    'price', 'vat_rate', 'stock', 'type', 'is_active', 'settings',
+    'image_path', 'price', 'vat_rate', 'stock', 'type', 'is_active', 'settings',
 ])]
 class Product extends Model
 {
@@ -42,6 +42,15 @@ class Product extends Model
     public function vatAmount(): float
     {
         return round((float) $this->price - $this->priceExclVat(), 2);
+    }
+
+    public function imageUrl(): ?string
+    {
+        if (! $this->image_path) {
+            return null;
+        }
+
+        return rtrim(config('filesystems.disks.shop.url'), '/').'/'.ltrim($this->image_path, '/');
     }
 
     public function localized(string $field, ?string $locale = null): string

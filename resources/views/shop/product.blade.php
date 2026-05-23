@@ -11,7 +11,13 @@
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; margin-top: 1rem;">
-        <div style="background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%); aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; color: #d6d3d1; font-size: 6rem; border-radius: 12px;">🛍</div>
+        <div style="aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%); display: flex; align-items: center; justify-content: center; color: #d6d3d1; font-size: 6rem;">
+            @if ($product->imageUrl())
+                <img src="{{ $product->imageUrl() }}" alt="{{ $product->localized('name') }}" style="width: 100%; height: 100%; object-fit: cover;">
+            @else
+                🛍
+            @endif
+        </div>
 
         <div>
             <h1 style="font-size: 2rem; letter-spacing: -0.01em; margin-bottom: 0.25rem;">{{ $product->localized('name') }}</h1>
@@ -58,7 +64,11 @@
         <div class="product-grid">
             @foreach ($related as $r)
                 <a class="product-card" href="{{ route('shop.product', $r->slug) }}">
-                    <div class="ph">🛍</div>
+                    @if ($r->imageUrl())
+                        <img src="{{ $r->imageUrl() }}" alt="{{ $r->localized('name') }}" style="aspect-ratio: 1/1; object-fit: cover;">
+                    @else
+                        <div class="ph">🛍</div>
+                    @endif
                     <div class="body">
                         <div class="name">{{ $r->localized('name') }}</div>
                         <div class="price">{{ App\Support\Money::format($r->price, setting('shop.currency', 'SEK')) }}</div>

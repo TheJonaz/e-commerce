@@ -12,7 +12,13 @@
         <div style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;">
             @foreach ($cart->items as $item)
                 <div style="display: grid; grid-template-columns: 60px 1fr auto auto auto; gap: 1rem; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);">
-                    <div style="background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%); aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; color: #d6d3d1; font-size: 1.25rem; border-radius: 6px;">🛍</div>
+                    <div style="aspect-ratio: 1/1; border-radius: 6px; overflow: hidden; background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%); display: flex; align-items: center; justify-content: center; color: #d6d3d1; font-size: 1.25rem;">
+                        @if ($item->product?->imageUrl())
+                            <img src="{{ $item->product->imageUrl() }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                        @else
+                            🛍
+                        @endif
+                    </div>
                     <div>
                         <a href="{{ route('shop.product', $item->product->slug) }}" style="font-weight: 600;">{{ $item->product->localized('name') }}</a>
                         <div style="color: var(--muted); font-size: 0.85rem;">{{ App\Support\Money::format($item->price_snapshot, $cart->currency) }} / st</div>
