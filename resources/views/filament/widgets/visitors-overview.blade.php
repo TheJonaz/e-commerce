@@ -1,6 +1,5 @@
 <x-filament-widgets::widget>
-    <x-filament::section>
-        <x-slot name="heading">Besöksstatistik (senaste 30 dagarna)</x-slot>
+    <x-panel panel-key="visitors-overview" heading="Besöksstatistik (senaste 30 dagarna)">
 
         @php
             $fmt = fn ($n) => number_format($n, 0, ',', ' ');
@@ -88,5 +87,5 @@
                 </div>
             </div>
         </div>
-    </x-filament::section>
+    </x-panel>
 </x-filament-widgets::widget>
