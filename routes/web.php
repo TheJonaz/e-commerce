@@ -4,6 +4,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\ShopController;
+use App\Support\Installation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/install', [InstallController::class, 'show'])->name('install');
@@ -12,7 +13,7 @@ Route::post('/install/test-db', [InstallController::class, 'testDatabase'])->nam
 
 Route::middleware('web')->group(function () {
     Route::get('/', function () {
-        if (! file_exists(storage_path('install.lock'))) {
+        if (! Installation::isInstalled()) {
             return redirect('/install');
         }
 
