@@ -29,9 +29,12 @@
     class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10"
     style="margin-bottom: 1.5rem"
 >
-    <header class="flex items-center justify-between" style="padding: 0 0 0 1.5rem; min-height: 44px; border-bottom: 1px solid rgba(0,0,0,0.08);" x-bind:style="state === 'collapsed' ? 'border-bottom: 0' : ''">
-        <h3 class="text-base font-semibold text-gray-950 dark:text-white" style="margin: 0; padding: 0.5rem 0">{{ $heading }}</h3>
-        <div style="display: inline-flex; margin-left: auto; align-self: stretch;">
+    <header
+        style="display: flex; align-items: stretch; justify-content: space-between; padding: 0 0 0 1.5rem; min-height: 44px; border-bottom: 1px solid rgba(0,0,0,0.08);"
+        x-bind:style="state === 'collapsed' ? 'display: flex; align-items: stretch; justify-content: space-between; padding: 0 0 0 1.5rem; min-height: 44px; border-bottom: 0' : ''"
+    >
+        <h3 class="text-base font-semibold text-gray-950 dark:text-white" style="margin: 0; padding: 0.5rem 0; align-self: center; flex: 1; min-width: 0;">{{ $heading }}</h3>
+        <div style="display: flex; align-items: stretch; flex-shrink: 0;">
             <button type="button" @click="toggleCollapse"
                 title="Minimera"
                 x-text="state === 'collapsed' ? '☐' : '–'"
