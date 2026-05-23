@@ -11,11 +11,31 @@
             --border: #e2e8f0;
             --text: #0f172a;
             --muted: #64748b;
+            --input-bg: #ffffff;
+            --section-tint: #f1f5f9;
             --primary: #4f46e5;
             --primary-hover: #4338ca;
             --ok: #15803d;
             --fail: #b91c1c;
+            --fail-bg: #fef2f2;
+            --fail-border: #fecaca;
             --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+        }
+        html[data-theme="dark"] {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --input-bg: #0f172a;
+            --section-tint: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #818cf8;
+            --ok: #4ade80;
+            --fail: #f87171;
+            --fail-bg: #450a0a;
+            --fail-border: #7f1d1d;
+            --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { background: var(--bg); }
@@ -34,14 +54,16 @@
         }
         h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
         .lead { color: var(--muted); font-size: 0.875rem; margin-top: 0.15rem; }
-        .lang { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
-        .lang button {
+        .toolbar { display: inline-flex; gap: 0.5rem; align-items: center; }
+        .lang, .theme { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
+        .lang button, .theme button {
             padding: 0.4rem 0.85rem; background: transparent; border: 0; cursor: pointer; font: inherit; font-weight: 500; color: var(--muted);
         }
-        .lang button.active { background: var(--primary); color: white; }
-        .errors { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem; }
-        .errors strong { color: #991b1b; display: block; margin-bottom: 0.25rem; }
-        .errors ul { margin-left: 1.25rem; color: #7f1d1d; }
+        .lang button.active, .theme button.active { background: var(--primary); color: white; }
+        .theme button { padding: 0.4rem 0.7rem; }
+        .errors { background: var(--fail-bg); border: 1px solid var(--fail-border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem; }
+        .errors strong { color: var(--fail); display: block; margin-bottom: 0.25rem; }
+        .errors ul { margin-left: 1.25rem; color: var(--fail); }
         .grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
         .grid.three { grid-template-columns: repeat(3, 1fr); }
         @media (max-width: 720px) { .grid, .grid.three { grid-template-columns: 1fr; } }
@@ -73,8 +95,9 @@
             display: block; width: 100%; margin-top: 0.25rem;
             padding: 0.5rem 0.65rem;
             border: 1px solid var(--border); border-radius: 6px;
-            font: inherit; color: var(--text); background: var(--card);
+            font: inherit; color: var(--text); background: var(--input-bg);
             transition: border-color 0.15s, box-shadow 0.15s;
+            color-scheme: light dark;
         }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
         .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -118,9 +141,15 @@
             <h1 data-i18n="title">Installera Open E-commerce</h1>
             <p class="lead" data-i18n="lead">Engångskonfiguration. Sidan låses när installationen är klar.</p>
         </div>
-        <div class="lang" role="tablist" aria-label="UI language">
-            <button type="button" data-lang="sv" class="active">SV</button>
-            <button type="button" data-lang="en">EN</button>
+        <div class="toolbar">
+            <div class="theme" role="tablist" aria-label="Theme">
+                <button type="button" data-theme="light" title="Light">☀</button>
+                <button type="button" data-theme="dark" title="Dark">☾</button>
+            </div>
+            <div class="lang" role="tablist" aria-label="UI language">
+                <button type="button" data-lang="sv" class="active">SV</button>
+                <button type="button" data-lang="en">EN</button>
+            </div>
         </div>
     </header>
 
@@ -311,7 +340,9 @@
         };
 
         const STORAGE_KEY = 'install_ui_lang';
+        const THEME_KEY = 'install_ui_theme';
         const buttons = document.querySelectorAll('.lang button');
+        const themeButtons = document.querySelectorAll('.theme button');
         const html = document.getElementById('html');
 
         function applyLang(lang) {
@@ -334,6 +365,21 @@
             else if ((navigator.language || 'sv').toLowerCase().startsWith('en')) initial = 'en';
         } catch (e) {}
         applyLang(initial);
+
+        // --- Theme toggle ---
+        function applyTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            themeButtons.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+            try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+        }
+        themeButtons.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.theme)));
+        let initialTheme = 'light';
+        try {
+            const t = localStorage.getItem(THEME_KEY);
+            if (t === 'light' || t === 'dark') initialTheme = t;
+            else if (window.matchMedia('(prefers-color-scheme: dark)').matches) initialTheme = 'dark';
+        } catch (e) {}
+        applyTheme(initialTheme);
 
         // --- DB connection test ---
         const testBtn = document.getElementById('db-test-btn');
