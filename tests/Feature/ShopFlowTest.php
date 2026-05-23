@@ -215,4 +215,37 @@ class ShopFlowTest extends TestCase
         $this->assertArrayHasKey('pickup', $shipping);
         $this->assertArrayHasKey('flat-rate', $shipping);
     }
+
+    public function test_stripe_gateway_skipped_when_no_secret_key(): void
+    {
+        // No secret key in the fresh DB — gateway should not register.
+        $payments = app(\App\Modules\PaymentRegistry::class)->all();
+        $this->assertArrayNotHasKey('stripe', $payments);
+    }
+
+    public function test_stripe_cancel_route_aborts_order(): void
+    {
+        $order = Order::create([
+            'order_number' => 'ORD-TEST-1',
+            'email' => 'x@example.test',
+            'currency' => 'SEK',
+            'subtotal_excl_vat' => 80, 'vat_total' => 20, 'grand_total' => 100,
+            'status' => Order::STATUS_PENDING, 'payment_status' => 'awaiting_payment',
+            'payment_method' => 'stripe', 'shipping_method' => 'pickup',
+        ]);
+
+        $this->get(route('stripe.cancel', $order->order_number))
+            ->assertRedirect(route('cart.show'));
+
+        $order->refresh();
+        $this->assertSame(Order::STATUS_CANCELLED, $order->status);
+        $this->assertSame('cancelled', $order->payment_status);
+    }
+
+    public function test_stripe_webhook_rejects_when_secret_not_configured(): void
+    {
+        $this->post(route('stripe.webhook'), [], ['Stripe-Signature' => 'sig'])
+            ->assertStatus(400)
+            ->assertSee('webhook secret not configured');
+    }
 }

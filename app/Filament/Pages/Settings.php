@@ -42,6 +42,10 @@ class Settings extends Page implements HasSchemas
             'flat_rate_lead_time' => Setting::get('shipping.flat_rate.lead_time', '2–5'),
             'pickup_address' => Setting::get('shipping.pickup.address', ''),
             'bank_transfer_bg' => Setting::get('payment.bank_transfer.bg', ''),
+            'stripe_publishable_key' => Setting::get('payment.stripe.publishable_key', ''),
+            'stripe_secret_key' => Setting::get('payment.stripe.secret_key', ''),
+            'stripe_webhook_secret' => Setting::get('payment.stripe.webhook_secret', ''),
+            'stripe_test_mode' => (bool) Setting::get('payment.stripe.test_mode', '1'),
         ]);
     }
 
@@ -94,6 +98,28 @@ class Settings extends Page implements HasSchemas
                     ->schema([
                         TextInput::make('bank_transfer_bg')->label('Bankgiro / account number')->columnSpanFull(),
                     ]),
+
+                Section::make('Stripe')
+                    ->description('Lämna tomt för att stänga av Stripe i kassan. Skaffa nycklar på dashboard.stripe.com → Developers → API keys.')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('stripe_test_mode')
+                            ->label('Testläge')
+                            ->helperText('Använd test-nycklar (pk_test_… / sk_test_…) tills du är redo att ta riktig betalning.')
+                            ->columnSpanFull(),
+                        TextInput::make('stripe_publishable_key')
+                            ->label('Publishable key')
+                            ->placeholder('pk_test_… eller pk_live_…'),
+                        TextInput::make('stripe_secret_key')
+                            ->label('Secret key')
+                            ->password()->revealable()
+                            ->placeholder('sk_test_… eller sk_live_…'),
+                        TextInput::make('stripe_webhook_secret')
+                            ->label('Webhook signing secret')
+                            ->password()->revealable()
+                            ->helperText('Skapa en webhook i Stripe-dashboard mot /webhooks/stripe → kopiera "whsec_..." hit.')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -118,6 +144,10 @@ class Settings extends Page implements HasSchemas
                         'shipping.flat_rate.lead_time' => $data['flat_rate_lead_time'],
                         'shipping.pickup.address' => $data['pickup_address'],
                         'payment.bank_transfer.bg' => $data['bank_transfer_bg'],
+                        'payment.stripe.publishable_key' => $data['stripe_publishable_key'] ?? '',
+                        'payment.stripe.secret_key' => $data['stripe_secret_key'] ?? '',
+                        'payment.stripe.webhook_secret' => $data['stripe_webhook_secret'] ?? '',
+                        'payment.stripe.test_mode' => $data['stripe_test_mode'] ? '1' : '0',
                     ]);
 
                     Notification::make()

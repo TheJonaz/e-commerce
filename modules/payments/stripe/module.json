@@ -1,0 +1,7 @@
+{
+    "name": "stripe",
+    "label": "Stripe",
+    "version": "1.0.0",
+    "namespace": "Modules\\Payments\\Stripe",
+    "provider": "Modules\\Payments\\Stripe\\StripeServiceProvider"
+}
