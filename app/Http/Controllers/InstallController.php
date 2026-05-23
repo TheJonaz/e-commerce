@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use PDO;
 
 class InstallController extends Controller
 {
@@ -87,6 +89,95 @@ class InstallController extends Controller
         $this->lock();
 
         return redirect('/')->with('status', 'Installation complete.');
+    }
+
+    public function testDatabase(Request $request): JsonResponse
+    {
+        if ($this->isLocked()) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'db_connection' => ['required', Rule::in(['mysql', 'sqlite'])],
+            'db_host' => ['nullable', 'string'],
+            'db_port' => ['nullable', 'integer'],
+            'db_database' => ['required', 'string'],
+            'db_username' => ['nullable', 'string'],
+            'db_password' => ['nullable', 'string'],
+        ]);
+
+        try {
+            $started = microtime(true);
+            $info = $this->probeDatabase($data);
+            $ms = (int) round((microtime(true) - $started) * 1000);
+
+            return response()->json([
+                'ok' => true,
+                'driver' => $data['db_connection'],
+                'server' => $info['server'] ?? null,
+                'database' => $data['db_database'],
+                'duration_ms' => $ms,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => $this->humanizeDbError($e->getMessage()),
+            ], 200);
+        }
+    }
+
+    protected function probeDatabase(array $data): array
+    {
+        if ($data['db_connection'] === 'sqlite') {
+            $path = $data['db_database'];
+
+            if (! str_starts_with($path, '/') && ! str_starts_with($path, ':')) {
+                $path = base_path($path);
+            }
+
+            if ($path !== ':memory:' && ! is_file($path)) {
+                $dir = dirname($path);
+                if (! is_dir($dir) || ! is_writable($dir)) {
+                    throw new \RuntimeException("Path is not writable: $dir");
+                }
+            }
+
+            $pdo = new PDO('sqlite:' . $path);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $version = $pdo->query('SELECT sqlite_version()')->fetchColumn();
+
+            return ['server' => 'SQLite ' . $version];
+        }
+
+        $host = $data['db_host'] ?: '127.0.0.1';
+        $port = $data['db_port'] ?: 3306;
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $data['db_database']);
+
+        $pdo = new PDO($dsn, $data['db_username'] ?? '', $data['db_password'] ?? '', [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 5,
+        ]);
+        $version = $pdo->query('SELECT VERSION()')->fetchColumn();
+
+        return ['server' => 'MySQL ' . $version];
+    }
+
+    protected function humanizeDbError(string $raw): string
+    {
+        if (str_contains($raw, 'Access denied')) {
+            return 'Fel användarnamn eller lösenord.';
+        }
+        if (str_contains($raw, 'Unknown database')) {
+            return 'Databasen finns inte.';
+        }
+        if (str_contains($raw, 'Connection refused') || str_contains($raw, 'getaddrinfo')) {
+            return 'Kan inte nå databasservern (host/port).';
+        }
+        if (str_contains($raw, 'unable to open database file')) {
+            return 'Kan inte öppna SQLite-filen (kontrollera sökväg + skrivrättigheter).';
+        }
+
+        return $raw;
     }
 
     protected function isLocked(): bool

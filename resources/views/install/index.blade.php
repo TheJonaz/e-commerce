@@ -88,6 +88,18 @@
             transition: background 0.15s;
         }
         button.submit:hover { background: var(--primary-hover); }
+
+        .db-test-btn {
+            padding: 0.45rem 0.85rem; background: var(--card); color: var(--text);
+            border: 1px solid var(--border); border-radius: 6px; font: inherit; font-weight: 500;
+            font-size: 0.8125rem; cursor: pointer;
+        }
+        .db-test-btn:hover { background: #f1f5f9; }
+        .db-test-btn:disabled { opacity: 0.6; cursor: progress; }
+        .db-test-result { font-size: 0.85rem; }
+        .db-test-result.ok { color: var(--ok); }
+        .db-test-result.fail { color: var(--fail); font-weight: 600; }
+        .db-test-result.pending { color: var(--muted); }
     </style>
 </head>
 <body>
@@ -164,6 +176,11 @@
                         <span data-i18n="db_password">Lösenord</span>
                         <input type="password" name="db_password" value="">
                     </label>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;">
+                    <button type="button" id="db-test-btn" class="db-test-btn" data-i18n="db_test">Testa anslutning</button>
+                    <span id="db-test-result" class="db-test-result" aria-live="polite"></span>
                 </div>
             </div>
 
@@ -247,6 +264,10 @@
                 shop_locale: 'Språk',
                 seed_demo: 'Fyll på med demo-data (20 produkter, 5 kategorier, 3 kunder)',
                 install: 'Installera',
+                db_test: 'Testa anslutning',
+                db_test_running: 'Testar…',
+                db_test_ok: 'Anslutningen fungerar',
+                db_test_fail: 'Fel',
             },
             en: {
                 title: 'Install Open E-commerce',
@@ -272,6 +293,10 @@
                 shop_locale: 'Language',
                 seed_demo: 'Seed with demo data (20 products, 5 categories, 3 customers)',
                 install: 'Install',
+                db_test: 'Test connection',
+                db_test_running: 'Testing…',
+                db_test_ok: 'Connection works',
+                db_test_fail: 'Error',
             },
         };
 
@@ -299,6 +324,52 @@
             else if ((navigator.language || 'sv').toLowerCase().startsWith('en')) initial = 'en';
         } catch (e) {}
         applyLang(initial);
+
+        // --- DB connection test ---
+        const testBtn = document.getElementById('db-test-btn');
+        const testResult = document.getElementById('db-test-result');
+        const form = document.querySelector('form');
+
+        function currentLangDict() {
+            const active = document.querySelector('.lang button.active');
+            return i18n[active?.dataset.lang ?? 'sv'] || i18n.sv;
+        }
+
+        testBtn?.addEventListener('click', async () => {
+            const fd = new FormData();
+            const token = form.querySelector('input[name="_token"]').value;
+            fd.append('_token', token);
+            ['db_connection', 'db_host', 'db_port', 'db_database', 'db_username', 'db_password'].forEach(name => {
+                const el = form.querySelector(`[name="${name}"]`);
+                if (el) fd.append(name, el.value);
+            });
+
+            const dict = currentLangDict();
+            testBtn.disabled = true;
+            testResult.className = 'db-test-result pending';
+            testResult.textContent = dict.db_test_running;
+
+            try {
+                const res = await fetch('{{ route('install.test-db') }}', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
+                    body: fd,
+                });
+                const body = await res.json();
+                if (body.ok) {
+                    testResult.className = 'db-test-result ok';
+                    testResult.textContent = '✓ ' + dict.db_test_ok + ' — ' + body.server + ' (' + body.duration_ms + ' ms)';
+                } else {
+                    testResult.className = 'db-test-result fail';
+                    testResult.textContent = '✗ ' + dict.db_test_fail + ': ' + (body.error || 'unknown');
+                }
+            } catch (e) {
+                testResult.className = 'db-test-result fail';
+                testResult.textContent = '✗ ' + dict.db_test_fail + ': ' + e.message;
+            } finally {
+                testBtn.disabled = false;
+            }
+        });
     </script>
 </body>
 </html>

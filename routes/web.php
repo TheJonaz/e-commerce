@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/install', [InstallController::class, 'show'])->name('install');
 Route::post('/install', [InstallController::class, 'store']);
+Route::post('/install/test-db', [InstallController::class, 'testDatabase'])->name('install.test-db');
 
 Route::middleware('web')->group(function () {
     Route::get('/', function () {
