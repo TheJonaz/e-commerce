@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Address;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
@@ -117,8 +119,109 @@ class DemoSeeder extends Seeder
         }
 
         $visits = $this->seedVisits();
+        $orders = $this->seedOrders();
 
-        $this->command?->info("Seeded {$categories->count()} categories, " . count($products) . " products, " . count($customers) . " customers, {$visits} visits.");
+        $this->command?->info("Seeded {$categories->count()} categories, " . count($products) . " products, " . count($customers) . " customers, {$visits} visits, {$orders} orders.");
+    }
+
+    protected function seedOrders(): int
+    {
+        $products = Product::all();
+        $customers = Customer::all();
+        if ($products->isEmpty() || $customers->isEmpty()) {
+            return 0;
+        }
+
+        // Make some products best-sellers via weighted picking
+        $weighted = [];
+        foreach ($products as $i => $p) {
+            $weight = match (true) {
+                $i < 3 => 8,
+                $i < 8 => 4,
+                $i < 15 => 2,
+                default => 1,
+            };
+            $weighted = array_merge($weighted, array_fill(0, $weight, $p->id));
+        }
+
+        $created = 0;
+        $now = Carbon::now();
+
+        for ($daysAgo = 29; $daysAgo >= 0; $daysAgo--) {
+            $day = $now->copy()->subDays($daysAgo);
+            // 3-12 orders/day, fewer on weekends
+            $ordersToday = in_array($day->dayOfWeek, [0, 6], true) ? rand(2, 6) : rand(4, 12);
+
+            for ($i = 0; $i < $ordersToday; $i++) {
+                $placedAt = $day->copy()->setTime(rand(8, 22), rand(0, 59), rand(0, 59));
+                $customer = $customers->random();
+                $lineCount = rand(1, 3);
+                $pickedIds = collect(array_rand(array_flip($weighted), min($lineCount, count(array_unique($weighted)))));
+                $pickedIds = is_object($pickedIds) ? $pickedIds : collect([$pickedIds]);
+
+                $lines = [];
+                foreach ((array) $pickedIds->all() as $pid) {
+                    $product = $products->firstWhere('id', $pid);
+                    if (! $product) continue;
+                    $qty = rand(1, 3);
+                    $unit = (float) $product->price;
+                    $rate = (float) $product->vat_rate;
+                    $gross = round($qty * $unit, 2);
+                    $net = $rate > 0 ? round($gross / (1 + $rate / 100), 2) : $gross;
+                    $lines[] = [
+                        'product' => $product, 'qty' => $qty, 'unit' => $unit, 'rate' => $rate,
+                        'gross' => $gross, 'net' => $net, 'vat' => round($gross - $net, 2),
+                    ];
+                }
+                if (! $lines) continue;
+
+                $shippingCost = 49.00;
+                $shippingNet = round($shippingCost / 1.25, 2);
+                $subtotal = round(array_sum(array_column($lines, 'net')) + $shippingNet, 2);
+                $vatTotal = round(array_sum(array_column($lines, 'vat')) + ($shippingCost - $shippingNet), 2);
+                $grand = round(array_sum(array_column($lines, 'gross')) + $shippingCost, 2);
+
+                $order = Order::create([
+                    'customer_id' => $customer->id,
+                    'order_number' => 'ORD-' . $placedAt->format('Ymd') . '-' . strtoupper(Str::random(5)),
+                    'email' => $customer->email,
+                    'currency' => 'SEK',
+                    'subtotal_excl_vat' => $subtotal,
+                    'vat_total' => $vatTotal,
+                    'shipping_total' => $shippingCost,
+                    'discount_total' => 0,
+                    'grand_total' => $grand,
+                    'status' => array_rand(array_flip([Order::STATUS_PAID, Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_PENDING])),
+                    'payment_status' => 'paid',
+                    'shipping_status' => 'shipped',
+                    'payment_method' => 'invoice',
+                    'shipping_method' => 'flat-rate',
+                    'shipping_address' => ['name' => $customer->name, 'street' => 'Storgatan 1', 'zip' => '11122', 'city' => 'Stockholm', 'country' => 'SE'],
+                    'billing_address' => ['name' => $customer->name, 'street' => 'Storgatan 1', 'zip' => '11122', 'city' => 'Stockholm', 'country' => 'SE'],
+                    'placed_at' => $placedAt,
+                    'created_at' => $placedAt,
+                    'updated_at' => $placedAt,
+                ]);
+
+                foreach ($lines as $l) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $l['product']->id,
+                        'name_snapshot' => $l['product']->localized('name'),
+                        'sku_snapshot' => $l['product']->sku,
+                        'qty' => $l['qty'],
+                        'unit_price_incl_vat' => $l['unit'],
+                        'vat_rate' => $l['rate'],
+                        'line_total_incl_vat' => $l['gross'],
+                        'line_vat_amount' => $l['vat'],
+                    ]);
+                }
+
+                $created++;
+            }
+        }
+
+        return $created;
     }
 
     protected function seedVisits(): int
@@ -132,7 +235,17 @@ class DemoSeeder extends Seeder
         foreach ($weights as $code => $w) {
             $pool = array_merge($pool, array_fill(0, $w, $code));
         }
-        $urls = ['/', '/categories/klader', '/categories/skor', '/categories/mat', '/products/jeans-slim', '/products/sneakers-vit', '/cart'];
+        // Build a weighted URL pool — most traffic on a handful of "popular" products
+        $productSlugs = Product::pluck('slug')->all();
+        $popular = array_slice($productSlugs, 0, 6);
+        $urls = ['/', '/', '/categories/klader', '/categories/skor', '/categories/mat', '/cart'];
+        foreach ($popular as $i => $s) {
+            $weight = match (true) { $i < 2 => 6, $i < 4 => 3, default => 2 };
+            $urls = array_merge($urls, array_fill(0, $weight, '/products/' . $s));
+        }
+        foreach (array_slice($productSlugs, 6) as $s) {
+            $urls[] = '/products/' . $s;
+        }
 
         $rows = [];
         $now = Carbon::now();
