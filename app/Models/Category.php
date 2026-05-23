@@ -34,4 +34,16 @@ class Category extends Model
     {
         return $this->belongsToMany(Product::class)->withPivot('position');
     }
+
+    public function localized(string $field, ?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+        $value = $this->{$field};
+
+        if (is_array($value)) {
+            return $value[$locale] ?? $value[config('shop.default_locale', 'sv')] ?? array_values($value)[0] ?? '';
+        }
+
+        return (string) ($value ?? '');
+    }
 }

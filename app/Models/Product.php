@@ -43,4 +43,16 @@ class Product extends Model
     {
         return round((float) $this->price - $this->priceExclVat(), 2);
     }
+
+    public function localized(string $field, ?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+        $value = $this->{$field};
+
+        if (is_array($value)) {
+            return $value[$locale] ?? $value[config('shop.default_locale', 'sv')] ?? array_values($value)[0] ?? '';
+        }
+
+        return (string) ($value ?? '');
+    }
 }
