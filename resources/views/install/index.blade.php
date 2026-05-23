@@ -1,36 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv" id="html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Install — Open E-commerce</title>
+    <title data-i18n="title">Installera Open E-commerce</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-        h1 { font-size: 1.8rem; margin-bottom: 0.25rem; }
-        h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
-        .lead { color: #666; margin-top: 0; }
-        .check { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed #eee; }
-        .ok { color: #15803d; }
-        .fail { color: #b91c1c; font-weight: 600; }
-        label { display: block; margin-top: 1rem; font-weight: 500; }
-        input, select { display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem; border: 1px solid #ccc; border-radius: 4px; font: inherit; }
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        button { margin-top: 2rem; padding: 0.7rem 1.5rem; background: #1d4ed8; color: white; border: 0; border-radius: 4px; font: inherit; font-weight: 600; cursor: pointer; }
-        button:hover { background: #1e40af; }
-        .errors { background: #fee2e2; border: 1px solid #fca5a5; padding: 0.75rem; border-radius: 4px; margin: 1rem 0; }
-        .errors ul { margin: 0.25rem 0 0 1.25rem; }
-        .check-list { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9rem; }
-        small { color: #666; font-weight: 400; }
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --ok: #15803d;
+            --fail: #b91c1c;
+            --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { background: var(--bg); }
+        body {
+            font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: var(--text);
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 4rem;
+        }
+        .top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+        .lead { color: var(--muted); font-size: 0.875rem; margin-top: 0.15rem; }
+        .lang { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
+        .lang button {
+            padding: 0.4rem 0.85rem; background: transparent; border: 0; cursor: pointer; font: inherit; font-weight: 500; color: var(--muted);
+        }
+        .lang button.active { background: var(--primary); color: white; }
+        .errors { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem; }
+        .errors strong { color: #991b1b; display: block; margin-bottom: 0.25rem; }
+        .errors ul { margin-left: 1.25rem; color: #7f1d1d; }
+        .grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+        .grid.three { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 720px) { .grid, .grid.three { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.1rem 1.1rem;
+            box-shadow: var(--shadow);
+        }
+        .card.full { grid-column: 1 / -1; }
+        .card h2 {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.075em;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+        }
+        .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.15rem 1.5rem; font-size: 0.8125rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .check { display: flex; justify-content: space-between; padding: 0.2rem 0; }
+        .check .label { color: var(--text); }
+        .check .val.ok { color: var(--ok); }
+        .check .val.fail { color: var(--fail); font-weight: 600; }
+        label { display: block; font-size: 0.8125rem; font-weight: 500; margin-bottom: 0.6rem; color: var(--text); }
+        label small { color: var(--muted); font-weight: 400; margin-left: 0.25rem; }
+        label:last-child { margin-bottom: 0; }
+        input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
+            display: block; width: 100%; margin-top: 0.25rem;
+            padding: 0.5rem 0.65rem;
+            border: 1px solid var(--border); border-radius: 6px;
+            font: inherit; color: var(--text); background: var(--card);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
+        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .row3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.75rem; }
+        .actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; }
+        .checkbox { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text); cursor: pointer; }
+        .checkbox input { width: 16px; height: 16px; accent-color: var(--primary); }
+        button.submit {
+            padding: 0.65rem 1.25rem; background: var(--primary); color: white;
+            border: 0; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer;
+            transition: background 0.15s;
+        }
+        button.submit:hover { background: var(--primary-hover); }
     </style>
 </head>
 <body>
-    <h1>Install Open E-commerce</h1>
-    <p class="lead">One-time setup. This page is disabled after installation completes.</p>
+    <header class="top">
+        <div>
+            <h1 data-i18n="title">Installera Open E-commerce</h1>
+            <p class="lead" data-i18n="lead">Engångskonfiguration. Sidan låses när installationen är klar.</p>
+        </div>
+        <div class="lang" role="tablist" aria-label="UI language">
+            <button type="button" data-lang="sv" class="active">SV</button>
+            <button type="button" data-lang="en">EN</button>
+        </div>
+    </header>
 
     @if ($errors->any())
         <div class="errors">
-            <strong>Please fix the following:</strong>
+            <strong data-i18n="errors_title">Åtgärda följande:</strong>
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -39,85 +113,190 @@
         </div>
     @endif
 
-    <h2>Environment</h2>
-    <div class="check-list">
-        @foreach ($checks as $check)
-            <div class="check">
-                <span>{{ $check['label'] }}</span>
-                <span class="{{ $check['ok'] ? 'ok' : 'fail' }}">{{ $check['ok'] ? '✓' : '✗' }} {{ $check['value'] }}</span>
+    <div class="grid" style="margin-bottom: 1rem;">
+        <div class="card full">
+            <h2 data-i18n="env">Miljö</h2>
+            <div class="checks">
+                @foreach ($checks as $check)
+                    <div class="check">
+                        <span class="label">{{ $check['label'] }}</span>
+                        <span class="val {{ $check['ok'] ? 'ok' : 'fail' }}">{{ $check['ok'] ? '✓' : '✗' }} {{ $check['value'] }}</span>
+                    </div>
+                @endforeach
             </div>
-        @endforeach
+        </div>
     </div>
 
     <form method="POST" action="/install">
         @csrf
 
-        <h2>Database</h2>
-        <label>Connection
-            <select name="db_connection" id="db_connection">
-                <option value="mysql" {{ ($old['db_connection'] ?? 'mysql') === 'mysql' ? 'selected' : '' }}>MySQL / MariaDB</option>
-                <option value="sqlite" {{ ($old['db_connection'] ?? '') === 'sqlite' ? 'selected' : '' }}>SQLite (file)</option>
-            </select>
-        </label>
-        <div class="row">
-            <label>Host
-                <input type="text" name="db_host" value="{{ $old['db_host'] ?? '127.0.0.1' }}">
-            </label>
-            <label>Port
-                <input type="number" name="db_port" value="{{ $old['db_port'] ?? '3306' }}">
-            </label>
-        </div>
-        <label>Database name <small>(for SQLite: absolute path or "database/database.sqlite")</small>
-            <input type="text" name="db_database" value="{{ $old['db_database'] ?? '' }}" required>
-        </label>
-        <div class="row">
-            <label>Username
-                <input type="text" name="db_username" value="{{ $old['db_username'] ?? '' }}">
-            </label>
-            <label>Password
-                <input type="password" name="db_password" value="">
-            </label>
+        <div class="grid">
+            <div class="card">
+                <h2 data-i18n="database">Databas</h2>
+                <label>
+                    <span data-i18n="db_connection">Anslutning</span>
+                    <select name="db_connection">
+                        <option value="mysql" {{ ($old['db_connection'] ?? 'mysql') === 'mysql' ? 'selected' : '' }}>MySQL / MariaDB</option>
+                        <option value="sqlite" {{ ($old['db_connection'] ?? '') === 'sqlite' ? 'selected' : '' }}>SQLite</option>
+                    </select>
+                </label>
+                <div class="row2">
+                    <label>
+                        <span data-i18n="db_host">Host</span>
+                        <input type="text" name="db_host" value="{{ $old['db_host'] ?? '127.0.0.1' }}">
+                    </label>
+                    <label>
+                        <span data-i18n="db_port">Port</span>
+                        <input type="number" name="db_port" value="{{ $old['db_port'] ?? '3306' }}">
+                    </label>
+                </div>
+                <label>
+                    <span data-i18n="db_database">Databasnamn</span>
+                    <small data-i18n="db_database_hint">(SQLite: filsökväg)</small>
+                    <input type="text" name="db_database" value="{{ $old['db_database'] ?? '' }}" required>
+                </label>
+                <div class="row2">
+                    <label>
+                        <span data-i18n="db_username">Användare</span>
+                        <input type="text" name="db_username" value="{{ $old['db_username'] ?? '' }}">
+                    </label>
+                    <label>
+                        <span data-i18n="db_password">Lösenord</span>
+                        <input type="password" name="db_password" value="">
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 data-i18n="admin">Administratör</h2>
+                <label>
+                    <span data-i18n="admin_name">Namn</span>
+                    <input type="text" name="admin_name" value="{{ $old['admin_name'] ?? '' }}" required>
+                </label>
+                <label>
+                    <span data-i18n="admin_email">E-post</span>
+                    <input type="email" name="admin_email" value="{{ $old['admin_email'] ?? '' }}" required>
+                </label>
+                <label>
+                    <span data-i18n="admin_password">Lösenord</span>
+                    <small data-i18n="admin_password_hint">(minst 8 tecken)</small>
+                    <input type="password" name="admin_password" required minlength="8">
+                </label>
+            </div>
+
+            <div class="card full">
+                <h2 data-i18n="shop">Butik</h2>
+                <div class="row3">
+                    <label>
+                        <span data-i18n="shop_name">Butikens namn</span>
+                        <input type="text" name="shop_name" value="{{ $old['shop_name'] ?? '' }}" required>
+                    </label>
+                    <label>
+                        <span data-i18n="shop_currency">Valuta</span>
+                        <select name="shop_currency">
+                            @foreach (['SEK', 'EUR', 'USD', 'NOK', 'DKK'] as $cur)
+                                <option value="{{ $cur }}" {{ ($old['shop_currency'] ?? 'SEK') === $cur ? 'selected' : '' }}>{{ $cur }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>
+                        <span data-i18n="shop_locale">Språk</span>
+                        <select name="shop_locale">
+                            <option value="sv" {{ ($old['shop_locale'] ?? 'sv') === 'sv' ? 'selected' : '' }}>Svenska</option>
+                            <option value="en" {{ ($old['shop_locale'] ?? '') === 'en' ? 'selected' : '' }}>English</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
         </div>
 
-        <h2>Admin account</h2>
-        <label>Name
-            <input type="text" name="admin_name" value="{{ $old['admin_name'] ?? '' }}" required>
-        </label>
-        <div class="row">
-            <label>Email
-                <input type="email" name="admin_email" value="{{ $old['admin_email'] ?? '' }}" required>
+        <div class="actions">
+            <label class="checkbox">
+                <input type="checkbox" name="seed_demo" value="1" {{ old('seed_demo') ? 'checked' : '' }}>
+                <span data-i18n="seed_demo">Fyll på med demo-data (20 produkter, 5 kategorier, 3 kunder)</span>
             </label>
-            <label>Password <small>(min 8 chars)</small>
-                <input type="password" name="admin_password" required minlength="8">
-            </label>
+            <button type="submit" class="submit" data-i18n="install">Installera</button>
         </div>
-
-        <h2>Shop</h2>
-        <label>Shop name
-            <input type="text" name="shop_name" value="{{ $old['shop_name'] ?? '' }}" required>
-        </label>
-        <div class="row">
-            <label>Currency
-                <select name="shop_currency">
-                    @foreach (['SEK', 'EUR', 'USD', 'NOK', 'DKK'] as $cur)
-                        <option value="{{ $cur }}" {{ ($old['shop_currency'] ?? 'SEK') === $cur ? 'selected' : '' }}>{{ $cur }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label>Language
-                <select name="shop_locale">
-                    <option value="sv" {{ ($old['shop_locale'] ?? 'sv') === 'sv' ? 'selected' : '' }}>Svenska</option>
-                    <option value="en" {{ ($old['shop_locale'] ?? '') === 'en' ? 'selected' : '' }}>English</option>
-                </select>
-            </label>
-        </div>
-
-        <label style="margin-top: 1.5rem;">
-            <input type="checkbox" name="seed_demo" value="1" {{ old('seed_demo') ? 'checked' : '' }} style="width: auto; display: inline; margin-right: 0.5rem;">
-            Seed with demo data (20 products, 5 categories, 3 customers)
-        </label>
-
-        <button type="submit">Install</button>
     </form>
+
+    <script>
+        const i18n = {
+            sv: {
+                title: 'Installera Open E-commerce',
+                lead: 'Engångskonfiguration. Sidan låses när installationen är klar.',
+                errors_title: 'Åtgärda följande:',
+                env: 'Miljö',
+                database: 'Databas',
+                db_connection: 'Anslutning',
+                db_host: 'Host',
+                db_port: 'Port',
+                db_database: 'Databasnamn',
+                db_database_hint: '(SQLite: filsökväg)',
+                db_username: 'Användare',
+                db_password: 'Lösenord',
+                admin: 'Administratör',
+                admin_name: 'Namn',
+                admin_email: 'E-post',
+                admin_password: 'Lösenord',
+                admin_password_hint: '(minst 8 tecken)',
+                shop: 'Butik',
+                shop_name: 'Butikens namn',
+                shop_currency: 'Valuta',
+                shop_locale: 'Språk',
+                seed_demo: 'Fyll på med demo-data (20 produkter, 5 kategorier, 3 kunder)',
+                install: 'Installera',
+            },
+            en: {
+                title: 'Install Open E-commerce',
+                lead: 'One-time setup. This page is disabled after installation completes.',
+                errors_title: 'Please fix the following:',
+                env: 'Environment',
+                database: 'Database',
+                db_connection: 'Connection',
+                db_host: 'Host',
+                db_port: 'Port',
+                db_database: 'Database name',
+                db_database_hint: '(SQLite: file path)',
+                db_username: 'Username',
+                db_password: 'Password',
+                admin: 'Admin account',
+                admin_name: 'Name',
+                admin_email: 'Email',
+                admin_password: 'Password',
+                admin_password_hint: '(min 8 characters)',
+                shop: 'Shop',
+                shop_name: 'Shop name',
+                shop_currency: 'Currency',
+                shop_locale: 'Language',
+                seed_demo: 'Seed with demo data (20 products, 5 categories, 3 customers)',
+                install: 'Install',
+            },
+        };
+
+        const STORAGE_KEY = 'install_ui_lang';
+        const buttons = document.querySelectorAll('.lang button');
+        const html = document.getElementById('html');
+
+        function applyLang(lang) {
+            const dict = i18n[lang] || i18n.sv;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
+            html.setAttribute('lang', lang);
+            buttons.forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+            try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) {}
+        }
+
+        buttons.forEach(b => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+
+        let initial = 'sv';
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored && i18n[stored]) initial = stored;
+            else if ((navigator.language || 'sv').toLowerCase().startsWith('en')) initial = 'en';
+        } catch (e) {}
+        applyLang(initial);
+    </script>
 </body>
 </html>

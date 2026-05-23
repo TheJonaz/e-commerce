@@ -29,7 +29,7 @@ class InstallTest extends TestCase
     {
         $this->get('/install')
             ->assertOk()
-            ->assertSee('Install Open E-commerce')
+            ->assertSee('Installera Open E-commerce')
             ->assertSee('PHP extension: intl');
     }
 
