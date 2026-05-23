@@ -5,6 +5,12 @@
         <h1>{{ __('shop.checkout.title') }}</h1>
     </div>
 
+    @guest('customer')
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.65rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;">
+            Har du redan ett konto? <a href="{{ route('customer.login') }}" style="color: var(--primary); font-weight: 500; text-decoration: underline;">Logga in</a> för snabbare checkout.
+        </div>
+    @endguest
+
     @if ($errors->any())
         <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; color: #7f1d1d;">
             <ul style="margin-left: 1.25rem;">
@@ -30,13 +36,13 @@
                 <h2 style="{{ $h2Style }}">{{ __('shop.checkout.contact') }}</h2>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                     <label style="{{ $labelStyle }}">Namn
-                        <input type="text" name="name" value="{{ old('name') }}" required style="{{ $inputStyle }}">
+                        <input type="text" name="name" value="{{ old('name', $prefill['name']) }}" required style="{{ $inputStyle }}">
                     </label>
                     <label style="{{ $labelStyle }}">E-post
-                        <input type="email" name="email" value="{{ old('email') }}" required style="{{ $inputStyle }}">
+                        <input type="email" name="email" value="{{ old('email', $prefill['email']) }}" required style="{{ $inputStyle }}">
                     </label>
                     <label style="{{ $labelStyle }} grid-column: 1 / -1;">Telefon
-                        <input type="tel" name="phone" value="{{ old('phone') }}" style="{{ $inputStyle }}">
+                        <input type="tel" name="phone" value="{{ old('phone', $prefill['phone']) }}" style="{{ $inputStyle }}">
                     </label>
                 </div>
             </div>
@@ -45,19 +51,19 @@
                 <h2 style="{{ $h2Style }}">{{ __('shop.checkout.shipping') }}</h2>
                 <div style="display: grid; gap: 0.75rem;">
                     <label style="{{ $labelStyle }}">Gata
-                        <input type="text" name="street" value="{{ old('street') }}" required style="{{ $inputStyle }}">
+                        <input type="text" name="street" value="{{ old('street', $prefill['street']) }}" required style="{{ $inputStyle }}">
                     </label>
                     <div style="display: grid; grid-template-columns: 120px 1fr 120px; gap: 0.75rem;">
                         <label style="{{ $labelStyle }}">Postnummer
-                            <input type="text" name="zip" value="{{ old('zip') }}" required style="{{ $inputStyle }}">
+                            <input type="text" name="zip" value="{{ old('zip', $prefill['zip']) }}" required style="{{ $inputStyle }}">
                         </label>
                         <label style="{{ $labelStyle }}">Ort
-                            <input type="text" name="city" value="{{ old('city') }}" required style="{{ $inputStyle }}">
+                            <input type="text" name="city" value="{{ old('city', $prefill['city']) }}" required style="{{ $inputStyle }}">
                         </label>
                         <label style="{{ $labelStyle }}">Land
                             <select name="country" style="{{ $inputStyle }}">
                                 @foreach (['SE' => 'Sverige', 'NO' => 'Norge', 'DK' => 'Danmark', 'FI' => 'Finland'] as $code => $name)
-                                    <option value="{{ $code }}" {{ old('country', 'SE') === $code ? 'selected' : '' }}>{{ $name }}</option>
+                                    <option value="{{ $code }}" {{ old('country', $prefill['country']) === $code ? 'selected' : '' }}>{{ $name }}</option>
                                 @endforeach
                             </select>
                         </label>

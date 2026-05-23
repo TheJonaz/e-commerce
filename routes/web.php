@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\ShopController;
 use App\Support\Installation;
@@ -31,4 +33,18 @@ Route::middleware('web')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/thanks/{orderNumber}', [CheckoutController::class, 'thanks'])->name('checkout.thanks');
+
+    // Customer auth
+    Route::get('/login', [CustomerAuthController::class, 'showLogin'])->name('customer.login');
+    Route::post('/login', [CustomerAuthController::class, 'login']);
+    Route::get('/register', [CustomerAuthController::class, 'showRegister'])->name('customer.register');
+    Route::post('/register', [CustomerAuthController::class, 'register']);
+    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
+
+    // Customer account (requires customer guard)
+    Route::middleware('auth:customer')->group(function () {
+        Route::get('/account', [AccountController::class, 'show'])->name('account.show');
+        Route::get('/account/orders', [AccountController::class, 'orders'])->name('account.orders');
+        Route::get('/account/orders/{orderNumber}', [AccountController::class, 'order'])->name('account.order');
+    });
 });

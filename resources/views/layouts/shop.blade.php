@@ -148,11 +148,18 @@
                     <a href="{{ route('shop.category', $cat->slug) }}" class="{{ request()->routeIs('shop.category') && request()->route('slug') === $cat->slug ? 'active' : '' }}">{{ $cat->localized('name') }}</a>
                 @endforeach
             </nav>
-            <a class="cart-link" href="{{ route('cart.show') }}">
-                {{ __('shop.cart.title') }}
-                @php $cartCount = app(\App\Support\CartService::class)->totals()['count']; @endphp
-                <span class="cart-badge" id="cart-badge" data-count="{{ $cartCount }}" @if ($cartCount === 0) style="display:none" @endif>{{ $cartCount }}</span>
-            </a>
+            <div style="display: inline-flex; gap: 0.5rem; align-items: center;">
+                @auth('customer')
+                    <a href="{{ route('account.show') }}" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; color: var(--muted); transition: color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">{{ auth('customer')->user()->name }}</a>
+                @else
+                    <a href="{{ route('customer.login') }}" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; color: var(--muted); transition: color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Logga in</a>
+                @endauth
+                <a class="cart-link" href="{{ route('cart.show') }}">
+                    {{ __('shop.cart.title') }}
+                    @php $cartCount = app(\App\Support\CartService::class)->totals()['count']; @endphp
+                    <span class="cart-badge" id="cart-badge" data-count="{{ $cartCount }}" @if ($cartCount === 0) style="display:none" @endif>{{ $cartCount }}</span>
+                </a>
+            </div>
         </div>
     </header>
 

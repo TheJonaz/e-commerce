@@ -321,4 +321,80 @@ class ShopFlowTest extends TestCase
         $this->assertSame(Order::STATUS_CANCELLED, $order->status);
         $this->assertSame('declined', $order->payment_status);
     }
+
+    public function test_customer_can_register_and_is_logged_in(): void
+    {
+        $this->post(route('customer.register'), [
+            'name' => 'Jane Test',
+            'email' => 'jane@example.test',
+            'phone' => '0701234567',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+        ])->assertRedirect(route('account.show'));
+
+        $this->assertTrue(auth('customer')->check());
+        $this->assertSame('jane@example.test', auth('customer')->user()->email);
+    }
+
+    public function test_customer_registration_claims_existing_guest_record(): void
+    {
+        \App\Models\Customer::create([
+            'email' => 'guest@example.test',
+            'name' => 'Guest Name',
+            'phone' => '0700000000',
+        ]);
+
+        $this->post(route('customer.register'), [
+            'name' => 'New Name',
+            'email' => 'guest@example.test',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+        ])->assertRedirect(route('account.show'));
+
+        $this->assertSame(1, \App\Models\Customer::count(), 'should reuse existing guest customer');
+        $this->assertNotNull(\App\Models\Customer::first()->password);
+    }
+
+    public function test_customer_registration_blocks_email_with_existing_password(): void
+    {
+        \App\Models\Customer::create([
+            'email' => 'existing@example.test',
+            'name' => 'Existing',
+            'password' => \Illuminate\Support\Facades\Hash::make('original'),
+        ]);
+
+        $this->post(route('customer.register'), [
+            'name' => 'Someone Else',
+            'email' => 'existing@example.test',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+        ])->assertSessionHasErrors('email');
+    }
+
+    public function test_customer_login(): void
+    {
+        \App\Models\Customer::create([
+            'email' => 'login@example.test',
+            'name' => 'L',
+            'password' => \Illuminate\Support\Facades\Hash::make('pw-correct'),
+        ]);
+
+        $this->post(route('customer.login'), [
+            'email' => 'login@example.test',
+            'password' => 'pw-wrong',
+        ])->assertSessionHasErrors('email');
+
+        $this->post(route('customer.login'), [
+            'email' => 'login@example.test',
+            'password' => 'pw-correct',
+        ])->assertRedirect(route('account.show'));
+
+        $this->assertTrue(auth('customer')->check());
+    }
+
+    public function test_account_pages_require_customer_auth(): void
+    {
+        $this->get(route('account.show'))->assertRedirect();
+        $this->get(route('account.orders'))->assertRedirect();
+    }
 }

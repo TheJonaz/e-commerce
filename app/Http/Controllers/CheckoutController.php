@@ -41,6 +41,9 @@ class CheckoutController extends Controller
 
         $totals = $this->computeTotals($cart, $shippingCost, $shippingVatRate);
 
+        $customer = auth('customer')->user();
+        $address = $customer?->defaultShippingAddress();
+
         return view('shop.checkout', [
             'cart' => $cart,
             'totals' => $totals,
@@ -48,6 +51,15 @@ class CheckoutController extends Controller
             'shipping_options' => $this->shipping->all(),
             'selected_shipping' => $shippingCode,
             'selected_payment' => $request->old('payment_method') ?? $this->payments->default()?->code(),
+            'prefill' => [
+                'email' => $customer?->email ?? '',
+                'name' => $customer?->name ?? '',
+                'phone' => $customer?->phone ?? '',
+                'street' => $address?->street ?? '',
+                'zip' => $address?->zip ?? '',
+                'city' => $address?->city ?? '',
+                'country' => $address?->country ?? 'SE',
+            ],
         ]);
     }
 
@@ -79,11 +91,18 @@ class CheckoutController extends Controller
         $shippingVatRate = $shipping->vatRate();
         $totals = $this->computeTotals($cart, $shippingCost, $shippingVatRate);
 
-        $order = DB::transaction(function () use ($cart, $data, $shipping, $shippingCost, $shippingVatRate, $totals) {
-            $customer = Customer::firstOrCreate(
-                ['email' => $data['email']],
-                ['name' => $data['name'], 'phone' => $data['phone'] ?? null]
-            );
+        $authCustomer = auth('customer')->user();
+
+        $order = DB::transaction(function () use ($cart, $data, $shipping, $shippingCost, $shippingVatRate, $totals, $authCustomer) {
+            // Prefer the logged-in customer (don't try to claim a stray email match).
+            if ($authCustomer) {
+                $customer = $authCustomer;
+            } else {
+                $customer = Customer::firstOrCreate(
+                    ['email' => $data['email']],
+                    ['name' => $data['name'], 'phone' => $data['phone'] ?? null]
+                );
+            }
 
             $address = [
                 'name' => $data['name'],
