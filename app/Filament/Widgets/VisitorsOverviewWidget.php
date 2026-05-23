@@ -23,24 +23,19 @@ class VisitorsOverviewWidget extends Widget
         $unique = (int) Visit::where('visited_at', '>=', $since)->distinct('session_id')->count('session_id');
         $today = (int) Visit::whereDate('visited_at', today())->count();
 
-        // 30-day series
         $rows = Visit::selectRaw("DATE(visited_at) as d, COUNT(*) as c")
             ->where('visited_at', '>=', Carbon::now()->subDays(29)->startOfDay())
             ->groupBy('d')->orderBy('d')
             ->pluck('c', 'd')->all();
 
-        $series = [];
+        $labels = [];
+        $data = [];
         for ($i = 29; $i >= 0; $i--) {
             $day = Carbon::now()->subDays($i)->format('Y-m-d');
-            $series[] = [
-                'date' => $day,
-                'label' => Carbon::parse($day)->isoFormat('D MMM'),
-                'count' => (int) ($rows[$day] ?? 0),
-            ];
+            $labels[] = Carbon::parse($day)->isoFormat('D MMM');
+            $data[] = (int) ($rows[$day] ?? 0);
         }
-        $maxCount = max(1, max(array_column($series, 'count')));
 
-        // Top countries
         $countryRows = Visit::selectRaw('country, COUNT(*) as visits')
             ->where('visited_at', '>=', $since)
             ->groupBy('country')
@@ -57,13 +52,33 @@ class VisitorsOverviewWidget extends Widget
             'pct' => round($r->visits / $maxCountry * 100),
         ])->all();
 
+        $chartData = [
+            'datasets' => [[
+                'label' => 'Besök',
+                'data' => $data,
+                'backgroundColor' => 'rgba(99, 102, 241, 0.75)',
+                'borderColor' => 'rgb(79, 70, 229)',
+                'borderRadius' => 4,
+            ]],
+            'labels' => $labels,
+        ];
+
+        $chartOptions = [
+            'plugins' => ['legend' => ['display' => false]],
+            'scales' => [
+                'y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]],
+                'x' => ['ticks' => ['maxTicksLimit' => 8, 'autoSkip' => true]],
+            ],
+            'maintainAspectRatio' => false,
+        ];
+
         return [
             'total' => $total,
             'unique' => $unique,
             'today' => $today,
             'uniquePct' => $total > 0 ? round($unique / $total * 100) : 0,
-            'series' => $series,
-            'maxCount' => $maxCount,
+            'chartData' => $chartData,
+            'chartOptions' => $chartOptions,
             'countries' => $countries,
         ];
     }
