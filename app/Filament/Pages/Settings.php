@@ -70,8 +70,8 @@ class Settings extends Page implements HasSchemas
                             ->options(['sv' => 'Svenska', 'en' => 'English'])
                             ->required(),
                         Toggle::make('shop_prices_include_vat')
-                            ->label('Priser inkluderar moms')
-                            ->helperText('På: priset du anger för en produkt är vad kunden betalar (B2C-standard i Sverige). Av: priset är exkl. moms och moms läggs på i kassan (B2B).')
+                            ->label('Priser inkluderar moms (standard för privatkunder)')
+                            ->helperText('Det priset du anger för en produkt är samma pris kunden ser och betalar i kassan. Företagskonton (B2B) kommer i framtiden kunna växla till exkl. moms-vy.')
                             ->default(true)
                             ->columnSpanFull(),
                     ]),
