@@ -90,13 +90,23 @@
         button.submit:hover { background: var(--primary-hover); }
 
         .db-test-btn {
-            padding: 0.45rem 0.85rem; background: var(--card); color: var(--text);
-            border: 1px solid var(--border); border-radius: 6px; font: inherit; font-weight: 500;
-            font-size: 0.8125rem; cursor: pointer;
+            padding: 0.55rem 1.1rem;
+            background: #0891b2;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            font: inherit; font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            box-shadow: 0 1px 2px rgba(8, 145, 178, 0.25);
+            transition: background 0.15s, transform 0.05s;
         }
-        .db-test-btn:hover { background: #f1f5f9; }
+        .db-test-btn::before { content: '⚡'; font-size: 1rem; }
+        .db-test-btn:hover { background: #0e7490; }
+        .db-test-btn:active { transform: translateY(1px); }
         .db-test-btn:disabled { opacity: 0.6; cursor: progress; }
-        .db-test-result { font-size: 0.85rem; }
+        .db-test-result { font-size: 0.875rem; font-weight: 500; }
         .db-test-result.ok { color: var(--ok); }
         .db-test-result.fail { color: var(--fail); font-weight: 600; }
         .db-test-result.pending { color: var(--muted); }
