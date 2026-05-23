@@ -71,7 +71,7 @@ class ShopFlowTest extends TestCase
         $product = Product::first();
 
         $this->post(route('cart.add', $product->slug), ['qty' => 2])
-            ->assertRedirect(route('cart.show'));
+            ->assertRedirect();
 
         $this->get(route('cart.show'))
             ->assertOk()
@@ -112,6 +112,20 @@ class ShopFlowTest extends TestCase
     public function test_empty_checkout_redirects_to_cart(): void
     {
         $this->get(route('checkout.show'))->assertRedirect(route('cart.show'));
+    }
+
+    public function test_cart_add_returns_json_for_ajax_requests(): void
+    {
+        $product = Product::first();
+
+        $this->postJson(route('cart.add', $product->slug), ['qty' => 3])
+            ->assertOk()
+            ->assertJson([
+                'ok' => true,
+                'product' => 'Testprodukt',
+                'qty_added' => 3,
+                'count' => 3,
+            ]);
     }
 
     public function test_flat_rate_shipping_is_added_to_totals(): void

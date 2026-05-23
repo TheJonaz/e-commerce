@@ -22,14 +22,27 @@ class CartController extends Controller
         ]);
     }
 
-    public function add(Request $request, Product $product): RedirectResponse
+    public function add(Request $request, Product $product)
     {
         abort_unless($product->is_active, 404);
 
         $qty = max(1, (int) $request->input('qty', 1));
         $this->cart->add($product, $qty);
 
-        return redirect()->route('cart.show')->with('status', __('shop.cart.add') . ': ' . $product->localized('name'));
+        if ($request->wantsJson() || $request->ajax()) {
+            $totals = $this->cart->totals();
+
+            return response()->json([
+                'ok' => true,
+                'product' => $product->localized('name'),
+                'qty_added' => $qty,
+                'count' => $totals['count'],
+                'subtotal' => $totals['subtotal'],
+                'grand' => $totals['grand'],
+            ]);
+        }
+
+        return redirect()->back()->with('status', __('shop.cart.add') . ': ' . $product->localized('name'));
     }
 
     public function update(Request $request, CartItem $item): RedirectResponse

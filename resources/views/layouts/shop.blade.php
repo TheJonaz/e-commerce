@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? setting('shop.name', config('app.name')) }}</title>
     <style>
         :root {
@@ -36,7 +37,20 @@
         nav.main a:hover, nav.main a.active { color: var(--text); }
         .cart-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; transition: background 0.15s; }
         .cart-link:hover { background: var(--accent); }
-        .cart-badge { background: var(--primary); color: white; border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
+        .cart-badge { background: var(--primary); color: white; border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; font-weight: 600; transition: transform 0.2s ease; }
+        .cart-badge.bump { transform: scale(1.25); }
+
+        .toast-stack { position: fixed; top: 4.25rem; right: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 100; pointer-events: none; }
+        .toast {
+            background: #15803d; color: white; padding: 0.65rem 1rem; border-radius: 10px;
+            font-size: 0.875rem; box-shadow: 0 8px 24px -8px rgba(21, 128, 61, 0.45);
+            display: flex; align-items: center; gap: 0.5rem;
+            pointer-events: auto;
+            transform: translateX(20px); opacity: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .toast.shown { transform: translateX(0); opacity: 1; }
+        .toast::before { content: '✓'; font-weight: 700; }
 
         main { padding: 2rem 0 4rem; }
         .page-head { margin-bottom: 1.5rem; }
@@ -137,9 +151,7 @@
             <a class="cart-link" href="{{ route('cart.show') }}">
                 {{ __('shop.cart.title') }}
                 @php $cartCount = app(\App\Support\CartService::class)->totals()['count']; @endphp
-                @if ($cartCount > 0)
-                    <span class="cart-badge">{{ $cartCount }}</span>
-                @endif
+                <span class="cart-badge" id="cart-badge" data-count="{{ $cartCount }}" @if ($cartCount === 0) style="display:none" @endif>{{ $cartCount }}</span>
             </a>
         </div>
     </header>
@@ -153,16 +165,80 @@
         </div>
     </main>
 
+    <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
     <footer class="site">
         <div class="container">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <div>{{ setting('shop.name', config('app.name')) }} · {{ setting('shop.currency', 'SEK') }}</div>
                 <div>
                     by <a href="https://www.thern.io" target="_blank" rel="noopener noreferrer">Thern AI Solutions</a>
-                    · <a href="{{ url('/admin') }}" target="_blank">Admin</a>
+                    @auth
+                        @if (auth()->user()->isAdmin())
+                            · <a href="{{ url('/admin') }}" target="_blank">Admin</a>
+                        @endif
+                    @endauth
                 </div>
             </div>
         </div>
     </footer>
+
+    <script>
+        (function () {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const stack = document.getElementById('toast-stack');
+            const badge = document.getElementById('cart-badge');
+
+            function toast(msg) {
+                if (! stack) return;
+                const el = document.createElement('div');
+                el.className = 'toast';
+                el.textContent = msg;
+                stack.appendChild(el);
+                requestAnimationFrame(() => el.classList.add('shown'));
+                setTimeout(() => {
+                    el.classList.remove('shown');
+                    setTimeout(() => el.remove(), 200);
+                }, 2200);
+            }
+
+            function bumpBadge(count) {
+                if (! badge) return;
+                badge.textContent = count;
+                badge.dataset.count = count;
+                badge.style.display = count > 0 ? '' : 'none';
+                badge.classList.remove('bump');
+                requestAnimationFrame(() => badge.classList.add('bump'));
+                setTimeout(() => badge.classList.remove('bump'), 220);
+            }
+
+            document.addEventListener('submit', async (e) => {
+                const form = e.target.closest('.product-card-quickadd');
+                if (! form) return;
+                e.preventDefault();
+
+                const url = form.getAttribute('action');
+                const fd = new FormData(form);
+                const btn = form.querySelector('button');
+                if (btn) btn.disabled = true;
+
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                        body: fd,
+                    });
+                    if (! res.ok) throw new Error('http ' + res.status);
+                    const body = await res.json();
+                    bumpBadge(body.count);
+                    toast(body.product + ' tillagd i varukorgen');
+                } catch (err) {
+                    toast('Kunde inte lägga till — försök igen');
+                } finally {
+                    if (btn) btn.disabled = false;
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
