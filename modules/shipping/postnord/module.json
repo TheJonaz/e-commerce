@@ -1,0 +1,7 @@
+{
+    "name": "postnord",
+    "label": "PostNord MyPack",
+    "version": "1.0.0",
+    "namespace": "Modules\\Shipping\\PostNord",
+    "provider": "Modules\\Shipping\\PostNord\\PostNordServiceProvider"
+}

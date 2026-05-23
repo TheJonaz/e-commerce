@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'sku', 'slug', 'name', 'short_description', 'description',
-    'image_path', 'price', 'vat_rate', 'stock', 'type', 'is_active', 'settings',
+    'image_path', 'price', 'vat_rate', 'stock', 'weight_grams',
+    'type', 'is_active', 'settings',
 ])]
 class Product extends Model
 {

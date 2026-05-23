@@ -53,6 +53,18 @@ class Settings extends Page implements HasSchemas
             'swish_cert_path' => Setting::get('payment.swish.cert_path', ''),
             'swish_cert_password' => Setting::get('payment.swish.cert_password', ''),
             'swish_test_mode' => (bool) Setting::get('payment.swish.test_mode', '1'),
+            'postnord_tier1_max_grams' => Setting::get('shipping.postnord.tier1_max_grams', '2000'),
+            'postnord_tier1_price' => Setting::get('shipping.postnord.tier1_price', '79'),
+            'postnord_tier2_max_grams' => Setting::get('shipping.postnord.tier2_max_grams', '5000'),
+            'postnord_tier2_price' => Setting::get('shipping.postnord.tier2_price', '109'),
+            'postnord_tier3_max_grams' => Setting::get('shipping.postnord.tier3_max_grams', '10000'),
+            'postnord_tier3_price' => Setting::get('shipping.postnord.tier3_price', '149'),
+            'postnord_tier4_max_grams' => Setting::get('shipping.postnord.tier4_max_grams', '20000'),
+            'postnord_tier4_price' => Setting::get('shipping.postnord.tier4_price', '229'),
+            'postnord_overflow_price' => Setting::get('shipping.postnord.overflow_price', '349'),
+            'postnord_free_threshold' => Setting::get('shipping.postnord.free_threshold', '0'),
+            'postnord_intl_multiplier' => Setting::get('shipping.postnord.intl_multiplier', '2.0'),
+            'postnord_lead_time' => Setting::get('shipping.postnord.lead_time', '2–4'),
         ]);
     }
 
@@ -85,6 +97,24 @@ class Settings extends Page implements HasSchemas
                             ->helperText('Det priset du anger för en produkt är samma pris kunden ser och betalar i kassan. Företagskonton (B2B) kommer i framtiden kunna växla till exkl. moms-vy.')
                             ->default(true)
                             ->columnSpanFull(),
+                    ]),
+
+                Section::make('PostNord MyPack')
+                    ->description('Viktbaserad prissättning. Default-värden följer PostNord MyPack Collect list-priser inkl. moms (anpassa till ditt företagsavtal).')
+                    ->columns(4)
+                    ->schema([
+                        TextInput::make('postnord_tier1_max_grams')->label('Tier 1 ≤ g')->numeric(),
+                        TextInput::make('postnord_tier1_price')->label('Tier 1 pris')->numeric()->step(0.01),
+                        TextInput::make('postnord_tier2_max_grams')->label('Tier 2 ≤ g')->numeric(),
+                        TextInput::make('postnord_tier2_price')->label('Tier 2 pris')->numeric()->step(0.01),
+                        TextInput::make('postnord_tier3_max_grams')->label('Tier 3 ≤ g')->numeric(),
+                        TextInput::make('postnord_tier3_price')->label('Tier 3 pris')->numeric()->step(0.01),
+                        TextInput::make('postnord_tier4_max_grams')->label('Tier 4 ≤ g')->numeric(),
+                        TextInput::make('postnord_tier4_price')->label('Tier 4 pris')->numeric()->step(0.01),
+                        TextInput::make('postnord_overflow_price')->label('Pris > tier 4')->numeric()->step(0.01),
+                        TextInput::make('postnord_free_threshold')->label('Fri över (0 = aldrig)')->numeric()->step(0.01),
+                        TextInput::make('postnord_intl_multiplier')->label('Intl-multiplikator')->numeric()->step(0.1),
+                        TextInput::make('postnord_lead_time')->label('Leveranstid')->placeholder('2–4'),
                     ]),
 
                 Section::make('Flat-rate shipping')
@@ -201,6 +231,18 @@ class Settings extends Page implements HasSchemas
                         'payment.swish.cert_path' => $data['swish_cert_path'] ?? '',
                         'payment.swish.cert_password' => $data['swish_cert_password'] ?? '',
                         'payment.swish.test_mode' => $data['swish_test_mode'] ? '1' : '0',
+                        'shipping.postnord.tier1_max_grams' => $data['postnord_tier1_max_grams'] ?? '2000',
+                        'shipping.postnord.tier1_price' => $data['postnord_tier1_price'] ?? '79',
+                        'shipping.postnord.tier2_max_grams' => $data['postnord_tier2_max_grams'] ?? '5000',
+                        'shipping.postnord.tier2_price' => $data['postnord_tier2_price'] ?? '109',
+                        'shipping.postnord.tier3_max_grams' => $data['postnord_tier3_max_grams'] ?? '10000',
+                        'shipping.postnord.tier3_price' => $data['postnord_tier3_price'] ?? '149',
+                        'shipping.postnord.tier4_max_grams' => $data['postnord_tier4_max_grams'] ?? '20000',
+                        'shipping.postnord.tier4_price' => $data['postnord_tier4_price'] ?? '229',
+                        'shipping.postnord.overflow_price' => $data['postnord_overflow_price'] ?? '349',
+                        'shipping.postnord.free_threshold' => $data['postnord_free_threshold'] ?? '0',
+                        'shipping.postnord.intl_multiplier' => $data['postnord_intl_multiplier'] ?? '2.0',
+                        'shipping.postnord.lead_time' => $data['postnord_lead_time'] ?? '2–4',
                     ]);
 
                     Notification::make()

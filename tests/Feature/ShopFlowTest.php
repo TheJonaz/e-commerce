@@ -397,4 +397,38 @@ class ShopFlowTest extends TestCase
         $this->get(route('account.show'))->assertRedirect();
         $this->get(route('account.orders'))->assertRedirect();
     }
+
+    public function test_postnord_is_registered_and_uses_weight_tiers(): void
+    {
+        $shipping = app(\App\Modules\ShippingRegistry::class);
+        $this->assertArrayHasKey('postnord', $shipping->all());
+        $postnord = $shipping->find('postnord');
+
+        $product = Product::first();
+        $product->weight_grams = 800;
+        $product->save();
+
+        // 1 × 800 g → tier 1 (≤ 2000 g → 79 kr)
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $cart = app(\App\Support\CartService::class)->current();
+        $this->assertSame(79.0, $postnord->cost($cart));
+
+        // 3 × 800 = 2400 g → tier 2 (≤ 5000 g → 109 kr)
+        $cart->items()->first()->update(['qty' => 3]);
+        $cart->load('items.product');
+        $this->assertSame(109.0, $postnord->cost($cart));
+    }
+
+    public function test_postnord_free_over_threshold(): void
+    {
+        \App\Models\Setting::put('shipping.postnord.free_threshold', '200');
+
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 5]);
+
+        $cart = app(\App\Support\CartService::class)->current();
+        $postnord = app(\App\Modules\ShippingRegistry::class)->find('postnord');
+
+        $this->assertSame(0.0, $postnord->cost($cart));
+    }
 }

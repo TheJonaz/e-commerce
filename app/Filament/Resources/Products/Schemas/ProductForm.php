@@ -84,6 +84,10 @@ class ProductForm
                         ->default((string) number_format(Vat::RATE_STANDARD, 2, '.', ''))
                         ->required(),
                     TextInput::make('stock')->numeric()->minValue(0),
+                    TextInput::make('weight_grams')
+                        ->label('Vikt (g)')
+                        ->numeric()->minValue(0)
+                        ->helperText('Används av viktbaserade fraktmoduler (t.ex. PostNord).'),
                 ]),
         ]);
     }
