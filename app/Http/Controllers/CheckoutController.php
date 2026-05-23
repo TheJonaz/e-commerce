@@ -5,17 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Modules\PaymentRegistry;
+use App\Modules\ShippingRegistry;
 use App\Support\CartService;
+use App\Support\Vat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
-    public function __construct(protected CartService $cart) {}
+    public function __construct(
+        protected CartService $cart,
+        protected PaymentRegistry $payments,
+        protected ShippingRegistry $shipping,
+    ) {}
 
-    public function show()
+    public function show(Request $request)
     {
         $cart = $this->cart->current();
 
@@ -23,9 +31,20 @@ class CheckoutController extends Controller
             return redirect()->route('cart.show');
         }
 
+        $shippingCode = $request->old('shipping_method') ?? $this->shipping->default()?->code();
+        $shipping = $shippingCode ? $this->shipping->find($shippingCode) : null;
+        $shippingCost = $shipping ? $shipping->cost($cart) : 0.0;
+        $shippingVatRate = $shipping ? $shipping->vatRate() : 0.0;
+
+        $totals = $this->computeTotals($cart, $shippingCost, $shippingVatRate);
+
         return view('shop.checkout', [
             'cart' => $cart,
-            'totals' => $this->cart->totals(),
+            'totals' => $totals,
+            'payments' => $this->payments->all(),
+            'shipping_options' => $this->shipping->all(),
+            'selected_shipping' => $shippingCode,
+            'selected_payment' => $request->old('payment_method') ?? $this->payments->default()?->code(),
         ]);
     }
 
@@ -46,15 +65,22 @@ class CheckoutController extends Controller
             'city' => ['required', 'string', 'max:128'],
             'country' => ['required', 'string', 'size:2'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'shipping_method' => ['required', Rule::in(array_keys($this->shipping->all()))],
+            'payment_method' => ['required', Rule::in(array_keys($this->payments->all()))],
         ]);
 
-        $order = DB::transaction(function () use ($cart, $data) {
+        $shipping = $this->shipping->find($data['shipping_method']);
+        $payment = $this->payments->find($data['payment_method']);
+
+        $shippingCost = $shipping->cost($cart);
+        $shippingVatRate = $shipping->vatRate();
+        $totals = $this->computeTotals($cart, $shippingCost, $shippingVatRate);
+
+        $order = DB::transaction(function () use ($cart, $data, $shipping, $shippingCost, $shippingVatRate, $totals) {
             $customer = Customer::firstOrCreate(
                 ['email' => $data['email']],
                 ['name' => $data['name'], 'phone' => $data['phone'] ?? null]
             );
-
-            $totals = $this->cart->totals();
 
             $address = [
                 'name' => $data['name'],
@@ -72,14 +98,14 @@ class CheckoutController extends Controller
                 'currency' => $cart->currency,
                 'subtotal_excl_vat' => $totals['subtotal'],
                 'vat_total' => $totals['vat'],
-                'shipping_total' => 0,
+                'shipping_total' => $shippingCost,
                 'discount_total' => 0,
                 'grand_total' => $totals['grand'],
                 'status' => Order::STATUS_PENDING,
                 'payment_status' => 'unpaid',
                 'shipping_status' => 'not_shipped',
-                'payment_method' => 'invoice',
-                'shipping_method' => 'pickup',
+                'payment_method' => $data['payment_method'],
+                'shipping_method' => $shipping->code(),
                 'shipping_address' => $address,
                 'billing_address' => $address,
                 'notes' => $data['notes'] ?? null,
@@ -109,16 +135,50 @@ class CheckoutController extends Controller
             return $order;
         });
 
+        $redirect = $payment->process($order);
+
         $this->cart->clear();
 
-        return redirect()->route('checkout.thanks', $order->order_number);
+        return $redirect
+            ? redirect()->away($redirect)
+            : redirect()->route('checkout.thanks', $order->order_number);
     }
 
     public function thanks(string $orderNumber)
     {
         $order = Order::with('items')->where('order_number', $orderNumber)->firstOrFail();
 
-        return view('shop.thanks', ['order' => $order]);
+        return view('shop.thanks', [
+            'order' => $order,
+            'payment' => $this->payments->find($order->payment_method),
+            'shipping' => $this->shipping->find($order->shipping_method),
+        ]);
+    }
+
+    protected function computeTotals($cart, float $shippingGross, float $shippingVatRate): array
+    {
+        $lines = $cart->items->map(fn ($i) => [
+            'qty' => $i->qty,
+            'unit_price_incl_vat' => (float) $i->price_snapshot,
+            'vat_rate' => (float) $i->vat_rate_snapshot,
+        ])->all();
+
+        if ($shippingGross > 0) {
+            $lines[] = [
+                'qty' => 1,
+                'unit_price_incl_vat' => $shippingGross,
+                'vat_rate' => $shippingVatRate,
+            ];
+        }
+
+        $sum = Vat::summarize($lines);
+
+        return [
+            'subtotal' => $sum['subtotal_excl_vat'],
+            'vat' => $sum['vat_total'],
+            'shipping' => $shippingGross,
+            'grand' => $sum['grand_total'],
+        ];
     }
 
     protected function generateOrderNumber(): string

@@ -1,0 +1,7 @@
+{
+    "name": "invoice",
+    "label": "Invoice",
+    "version": "1.0.0",
+    "namespace": "Modules\\Payments\\Invoice",
+    "provider": "Modules\\Payments\\Invoice\\InvoiceServiceProvider"
+}

@@ -1,0 +1,7 @@
+{
+    "name": "flat-rate",
+    "label": "Flat-rate shipping",
+    "version": "1.0.0",
+    "namespace": "Modules\\Shipping\\FlatRate",
+    "provider": "Modules\\Shipping\\FlatRate\\FlatRateServiceProvider"
+}

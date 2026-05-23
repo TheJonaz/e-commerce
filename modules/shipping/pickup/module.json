@@ -1,0 +1,7 @@
+{
+    "name": "pickup",
+    "label": "Local pickup",
+    "version": "1.0.0",
+    "namespace": "Modules\\Shipping\\Pickup",
+    "provider": "Modules\\Shipping\\Pickup\\PickupServiceProvider"
+}

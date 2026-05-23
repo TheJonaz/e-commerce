@@ -1,0 +1,7 @@
+{
+    "name": "bank-transfer",
+    "label": "Bank transfer",
+    "version": "1.0.0",
+    "namespace": "Modules\\Payments\\BankTransfer",
+    "provider": "Modules\\Payments\\BankTransfer\\BankTransferServiceProvider"
+}
