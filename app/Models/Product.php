@@ -41,6 +41,25 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->orderBy('position');
     }
 
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('position');
+    }
+
+    public function activeVariants(): HasMany
+    {
+        return $this->variants()->where('is_active', true);
+    }
+
+    public function hasVariants(): bool
+    {
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->where('is_active', true)->isNotEmpty();
+        }
+
+        return $this->variants()->where('is_active', true)->exists();
+    }
+
     public function priceExclVat(): float
     {
         return round((float) $this->price / (1 + ((float) $this->vat_rate / 100)), 2);

@@ -136,16 +136,24 @@ class CheckoutController extends Controller
 
             foreach ($cart->items as $item) {
                 $product = $item->product;
+                $variant = $item->variant;
                 $unit = (float) $item->price_snapshot;
                 $rate = (float) $item->vat_rate_snapshot;
                 $lineGross = round($item->qty * $unit, 2);
                 $lineNet = $rate > 0 ? round($lineGross / (1 + $rate / 100), 2) : $lineGross;
 
+                $name = $product?->localized('name') ?? '(deleted product)';
+                if ($variant?->label()) {
+                    $name .= ' — ' . $variant->label();
+                }
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product?->id,
-                    'name_snapshot' => $product?->localized('name') ?? '(deleted product)',
-                    'sku_snapshot' => $product?->sku,
+                    'variant_id' => $variant?->id,
+                    'name_snapshot' => $name,
+                    'sku_snapshot' => $variant?->sku ?? $product?->sku,
+                    'variant_options_snapshot' => $variant?->options,
                     'qty' => $item->qty,
                     'unit_price_incl_vat' => $unit,
                     'vat_rate' => $rate,

@@ -72,19 +72,100 @@
                 <p style="margin-bottom: 1.5rem;">{{ $product->localized('short_description') }}</p>
             @endif
 
-            <div style="margin-bottom: 1.5rem; font-size: 0.9rem; color: {{ $product->stock === null || $product->stock > 0 ? '#15803d' : '#b91c1c' }};">
-                @if ($product->stock === null || $product->stock > 0)
+            @php
+                $variants = $product->variants->where('is_active', true);
+                $hasVariants = $variants->isNotEmpty();
+                $axes = [];
+                foreach ($variants as $v) {
+                    foreach (($v->options ?? []) as $key => $val) {
+                        $axes[$key][$val] = true;
+                    }
+                }
+                $variantsJson = json_encode($variants->map(fn ($v) => [
+                    'id' => $v->id,
+                    'options' => $v->options ?? [],
+                    'price' => \App\Support\Money::format($v->price, setting('shop.currency', 'SEK')),
+                    'stock' => $v->stock,
+                    'label' => $v->label(),
+                ])->values(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+            @endphp
+
+            <div style="margin-bottom: 1.25rem; font-size: 0.9rem; color: {{ $hasVariants ? '#64748b' : (($product->stock === null || $product->stock > 0) ? '#15803d' : '#b91c1c') }};">
+                @if ($hasVariants)
+                    Välj variant
+                @elseif ($product->stock === null || $product->stock > 0)
                     ✓ {{ __('shop.product.in_stock') }}
                 @else
                     ✗ {{ __('shop.product.out_of_stock') }}
                 @endif
             </div>
 
+            @if ($hasVariants)
+                <div id="variant-picker" style="display: grid; gap: 0.85rem; margin-bottom: 1.5rem;"
+                    data-variants='{!! $variantsJson !!}'>
+                    @foreach ($axes as $axis => $values)
+                        <div>
+                            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.4rem; font-weight: 500;">{{ $axis }}</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                                @foreach (array_keys($values) as $value)
+                                    <button type="button"
+                                        class="variant-option"
+                                        data-axis="{{ $axis }}" data-value="{{ $value }}"
+                                        style="padding: 0.45rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); cursor: pointer; font: inherit; font-size: 0.85rem; transition: all 0.15s;">
+                                        {{ $value }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('cart.add', $product->slug) }}" style="display: flex; gap: 0.75rem; align-items: center;">
                 @csrf
+                <input type="hidden" name="variant_id" id="selected-variant-id" value="">
                 <input type="number" name="qty" value="1" min="1" max="99" style="width: 70px; padding: 0.6rem 0.65rem; border: 1px solid var(--border); border-radius: 8px; font: inherit; text-align: center;">
-                <button type="submit" class="btn btn-primary">{{ __('shop.cart.add') }}</button>
+                <button type="submit" id="add-to-cart-btn" class="btn btn-primary" {{ $hasVariants ? 'disabled' : '' }}>
+                    {{ __('shop.cart.add') }}
+                </button>
             </form>
+
+            @if ($hasVariants)
+                <script>
+                    (function () {
+                        const picker = document.getElementById('variant-picker');
+                        const variants = JSON.parse(picker.dataset.variants);
+                        const hiddenId = document.getElementById('selected-variant-id');
+                        const btn = document.getElementById('add-to-cart-btn');
+                        const selected = {};
+
+                        picker.querySelectorAll('.variant-option').forEach(b => b.addEventListener('click', () => {
+                            const axis = b.dataset.axis;
+                            const value = b.dataset.value;
+                            selected[axis] = value;
+
+                            // Highlight chosen value, dim others on the same axis.
+                            picker.querySelectorAll(`.variant-option[data-axis="${axis}"]`).forEach(other => {
+                                const active = other === b;
+                                other.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                                other.style.background = active ? '#eef2ff' : 'var(--card)';
+                                other.style.color = active ? 'var(--primary)' : 'inherit';
+                            });
+
+                            // Find matching variant.
+                            const match = variants.find(v => Object.keys(v.options).every(k => selected[k] === v.options[k]));
+                            if (match) {
+                                hiddenId.value = match.id;
+                                btn.disabled = false;
+                                btn.textContent = '{{ __('shop.cart.add') }} – ' + match.price;
+                            } else {
+                                hiddenId.value = '';
+                                btn.disabled = true;
+                            }
+                        }));
+                    })();
+                </script>
+            @endif
 
             @if ($product->localized('description'))
                 <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">

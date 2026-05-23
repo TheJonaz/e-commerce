@@ -514,4 +514,77 @@ class ShopFlowTest extends TestCase
 
         $this->assertStringContainsString('products/old.jpg', (string) $product->imageUrl());
     }
+
+    public function test_product_with_variants_blocks_add_without_selection(): void
+    {
+        $product = Product::create([
+            'sku' => 'VP-1', 'slug' => 'variant-prod',
+            'name' => ['sv' => 'Variant prod'], 'price' => 100, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+        $product->variants()->create([
+            'sku' => 'VP-1-S', 'options' => ['size' => 'S'], 'price' => 90, 'is_active' => true,
+        ]);
+
+        $this->post(route('cart.add', $product->slug), ['qty' => 1])
+            ->assertSessionHasErrors('variant');
+
+        $this->assertSame(0, \App\Models\CartItem::count());
+    }
+
+    public function test_cart_uses_variant_price_when_variant_picked(): void
+    {
+        $product = Product::create([
+            'sku' => 'VP-2', 'slug' => 'variant-prod-2',
+            'name' => ['sv' => 'Variant 2'], 'price' => 100, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+        $s = $product->variants()->create(['sku' => 'VP-2-S', 'options' => ['size' => 'S'], 'price' => 90, 'is_active' => true]);
+        $l = $product->variants()->create(['sku' => 'VP-2-L', 'options' => ['size' => 'L'], 'price' => 110, 'is_active' => true]);
+
+        $this->post(route('cart.add', $product->slug), ['qty' => 1, 'variant_id' => $l->id])
+            ->assertRedirect();
+
+        $item = \App\Models\CartItem::first();
+        $this->assertSame($l->id, $item->variant_id);
+        $this->assertSame(110.0, (float) $item->price_snapshot);
+    }
+
+    public function test_same_product_different_variants_are_separate_cart_items(): void
+    {
+        $product = Product::create([
+            'sku' => 'VP-3', 'slug' => 'variant-prod-3',
+            'name' => ['sv' => 'Variant 3'], 'price' => 100, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+        $s = $product->variants()->create(['sku' => 'VP-3-S', 'options' => ['size' => 'S'], 'price' => 90, 'is_active' => true]);
+        $l = $product->variants()->create(['sku' => 'VP-3-L', 'options' => ['size' => 'L'], 'price' => 110, 'is_active' => true]);
+
+        $this->post(route('cart.add', $product->slug), ['qty' => 1, 'variant_id' => $s->id]);
+        $this->post(route('cart.add', $product->slug), ['qty' => 1, 'variant_id' => $l->id]);
+
+        $this->assertSame(2, \App\Models\CartItem::count());
+    }
+
+    public function test_variant_options_snapshot_stored_on_order(): void
+    {
+        $product = Product::create([
+            'sku' => 'VP-4', 'slug' => 'variant-prod-4',
+            'name' => ['sv' => 'Variant 4'], 'price' => 100, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+        $m = $product->variants()->create([
+            'sku' => 'VP-4-M-RED', 'options' => ['size' => 'M', 'color' => 'Röd'],
+            'price' => 100, 'is_active' => true,
+        ]);
+
+        $this->post(route('cart.add', $product->slug), ['qty' => 1, 'variant_id' => $m->id]);
+
+        $this->post(route('checkout.store'), [
+            'email' => 'b@example.test', 'name' => 'B',
+            'street' => 'S', 'zip' => '1', 'city' => 'C', 'country' => 'SE',
+            'shipping_method' => 'pickup', 'payment_method' => 'invoice',
+        ])->assertRedirect();
+
+        $item = \App\Models\Order::first()->items->first();
+        $this->assertSame($m->id, $item->variant_id);
+        $this->assertSame(['size' => 'M', 'color' => 'Röd'], $item->variant_options_snapshot);
+        $this->assertStringContainsString('M / Röd', $item->name_snapshot);
+    }
 }

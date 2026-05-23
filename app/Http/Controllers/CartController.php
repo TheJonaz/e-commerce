@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Support\CartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,8 +27,22 @@ class CartController extends Controller
     {
         abort_unless($product->is_active, 404);
 
+        $variant = null;
+        if ($variantId = $request->input('variant_id')) {
+            $variant = ProductVariant::where('id', $variantId)
+                ->where('product_id', $product->id)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $variant) {
+                return back()->withErrors(['variant' => 'Vald variant finns inte.']);
+            }
+        } elseif ($product->hasVariants()) {
+            return back()->withErrors(['variant' => 'Välj variant först.']);
+        }
+
         $qty = max(1, (int) $request->input('qty', 1));
-        $this->cart->add($product, $qty);
+        $this->cart->add($product, $qty, $variant);
 
         if ($request->wantsJson() || $request->ajax()) {
             $totals = $this->cart->totals();

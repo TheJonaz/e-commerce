@@ -21,6 +21,9 @@
                     </div>
                     <div>
                         <a href="{{ route('shop.product', $item->product->slug) }}" style="font-weight: 600;">{{ $item->product->localized('name') }}</a>
+                        @if ($item->variant)
+                            <span style="color: var(--muted); font-size: 0.85rem;"> · {{ $item->variant->label() }}</span>
+                        @endif
                         <div style="color: var(--muted); font-size: 0.85rem;">{{ App\Support\Money::format($item->price_snapshot, $cart->currency) }} / st</div>
                     </div>
                     <form method="POST" action="{{ route('cart.update', $item) }}" style="display: flex; gap: 0.4rem; align-items: center;">

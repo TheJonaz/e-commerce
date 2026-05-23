@@ -105,6 +105,32 @@ class ProductForm
                         ->numeric()->minValue(0)
                         ->helperText('Används av viktbaserade fraktmoduler (t.ex. PostNord).'),
                 ]),
+
+            Section::make('Variants')
+                ->description('Lägg till varianter (t.ex. storlek, färg). När produkten har minst en aktiv variant måste kunden välja en innan add-to-cart.')
+                ->schema([
+                    Repeater::make('variants')
+                        ->relationship()
+                        ->orderColumn('position')
+                        ->reorderable()
+                        ->collapsed()
+                        ->columnSpanFull()
+                        ->itemLabel(fn (array $state): ?string => trim(($state['sku'] ?? '') . ' ' . collect($state['options'] ?? [])->filter()->implode(' / ')))
+                        ->columns(3)
+                        ->schema([
+                            TextInput::make('sku')->label('SKU'),
+                            TextInput::make('price')->required()->numeric()->step(0.01)->suffix(setting('shop.currency', 'SEK')),
+                            TextInput::make('stock')->numeric()->minValue(0),
+                            TextInput::make('weight_grams')->label('Vikt (g)')->numeric()->minValue(0),
+                            Toggle::make('is_active')->default(true),
+                            KeyValue::make('options')
+                                ->keyLabel('Attribut')
+                                ->valueLabel('Värde')
+                                ->default(['size' => '', 'color' => ''])
+                                ->required()
+                                ->columnSpanFull(),
+                        ]),
+                ]),
         ]);
     }
 }

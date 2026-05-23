@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
@@ -18,7 +19,7 @@ class CartService
         $id = Session::get(self::SESSION_KEY);
 
         if ($id) {
-            $cart = Cart::with('items.product')->find($id);
+            $cart = Cart::with('items.product', 'items.variant')->find($id);
             if ($cart) {
                 return $cart;
             }
@@ -38,11 +39,17 @@ class CartService
         return $cart;
     }
 
-    public function add(Product $product, int $qty = 1): CartItem
+    public function add(Product $product, int $qty = 1, ?ProductVariant $variant = null): CartItem
     {
         $cart = $this->current(create: true);
 
-        $item = $cart->items()->where('product_id', $product->id)->first();
+        $price = $variant ? (float) $variant->price : (float) $product->price;
+        $vatRate = $variant ? $variant->vatRate() : (float) $product->vat_rate;
+
+        $item = $cart->items()
+            ->where('product_id', $product->id)
+            ->where('variant_id', $variant?->id)
+            ->first();
 
         if ($item) {
             $item->qty += $qty;
@@ -53,9 +60,10 @@ class CartService
 
         return $cart->items()->create([
             'product_id' => $product->id,
+            'variant_id' => $variant?->id,
             'qty' => $qty,
-            'price_snapshot' => $product->price,
-            'vat_rate_snapshot' => $product->vat_rate,
+            'price_snapshot' => $price,
+            'vat_rate_snapshot' => $vatRate,
         ]);
     }
 
