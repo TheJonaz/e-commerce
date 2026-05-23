@@ -1,0 +1,7 @@
+{
+    "name": "swish",
+    "label": "Swish",
+    "version": "1.0.0",
+    "namespace": "Modules\\Payments\\Swish",
+    "provider": "Modules\\Payments\\Swish\\SwishServiceProvider"
+}

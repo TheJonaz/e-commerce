@@ -49,6 +49,10 @@ class Settings extends Page implements HasSchemas
             'klarna_username' => Setting::get('payment.klarna.username', ''),
             'klarna_password' => Setting::get('payment.klarna.password', ''),
             'klarna_test_mode' => (bool) Setting::get('payment.klarna.test_mode', '1'),
+            'swish_payee_alias' => Setting::get('payment.swish.payee_alias', ''),
+            'swish_cert_path' => Setting::get('payment.swish.cert_path', ''),
+            'swish_cert_password' => Setting::get('payment.swish.cert_password', ''),
+            'swish_test_mode' => (bool) Setting::get('payment.swish.test_mode', '1'),
         ]);
     }
 
@@ -100,6 +104,29 @@ class Settings extends Page implements HasSchemas
                 Section::make('Bank transfer')
                     ->schema([
                         TextInput::make('bank_transfer_bg')->label('Bankgiro / account number')->columnSpanFull(),
+                    ]),
+
+                Section::make('Swish')
+                    ->description('Kräver Swish Handel-avtal från din bank + klientcertifikat. För testläge använder du Swish MSS (Merchant Simulator System) med ett färdigt testcert från Swishs utvecklarsida.')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('swish_test_mode')
+                            ->label('Testläge (MSS)')
+                            ->columnSpanFull(),
+                        TextInput::make('swish_payee_alias')
+                            ->label('Swish-nummer')
+                            ->placeholder('1234679304 (test) eller ditt riktiga')
+                            ->helperText('Endast siffror. Testnummer i MSS: 1234679304.')
+                            ->columnSpanFull(),
+                        TextInput::make('swish_cert_path')
+                            ->label('Sökväg till klientcert (.pem)')
+                            ->placeholder('/var/www/secrets/swish.pem')
+                            ->helperText('Filen ska innehålla både cert och private key i PEM-format.')
+                            ->columnSpanFull(),
+                        TextInput::make('swish_cert_password')
+                            ->label('Cert-lösenord (om nödvändigt)')
+                            ->password()->revealable()
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Klarna')
@@ -170,6 +197,10 @@ class Settings extends Page implements HasSchemas
                         'payment.klarna.username' => $data['klarna_username'] ?? '',
                         'payment.klarna.password' => $data['klarna_password'] ?? '',
                         'payment.klarna.test_mode' => $data['klarna_test_mode'] ? '1' : '0',
+                        'payment.swish.payee_alias' => $data['swish_payee_alias'] ?? '',
+                        'payment.swish.cert_path' => $data['swish_cert_path'] ?? '',
+                        'payment.swish.cert_password' => $data['swish_cert_password'] ?? '',
+                        'payment.swish.test_mode' => $data['swish_test_mode'] ? '1' : '0',
                     ]);
 
                     Notification::make()

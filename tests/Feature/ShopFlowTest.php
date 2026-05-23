@@ -273,4 +273,52 @@ class ShopFlowTest extends TestCase
         $this->assertSame(Order::STATUS_CANCELLED, $order->status);
         $this->assertSame('cancelled', $order->payment_status);
     }
+
+    public function test_swish_gateway_skipped_without_payee_alias(): void
+    {
+        $payments = app(\App\Modules\PaymentRegistry::class)->all();
+        $this->assertArrayNotHasKey('swish', $payments);
+    }
+
+    public function test_swish_callback_marks_paid_on_PAID_status(): void
+    {
+        $order = Order::create([
+            'order_number' => 'ORD-SW-1',
+            'email' => 'x@example.test',
+            'currency' => 'SEK',
+            'subtotal_excl_vat' => 80, 'vat_total' => 20, 'grand_total' => 100,
+            'status' => Order::STATUS_PENDING, 'payment_status' => 'awaiting_payment',
+            'payment_method' => 'swish', 'shipping_method' => 'pickup',
+        ]);
+
+        $this->postJson(route('swish.callback', $order->order_number), [
+            'status' => 'PAID',
+            'paymentReference' => 'SWREF123',
+        ])->assertOk();
+
+        $order->refresh();
+        $this->assertSame(Order::STATUS_PAID, $order->status);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame('SWREF123', $order->payment_reference);
+    }
+
+    public function test_swish_callback_marks_cancelled_on_DECLINED(): void
+    {
+        $order = Order::create([
+            'order_number' => 'ORD-SW-2',
+            'email' => 'x@example.test',
+            'currency' => 'SEK',
+            'subtotal_excl_vat' => 80, 'vat_total' => 20, 'grand_total' => 100,
+            'status' => Order::STATUS_PENDING, 'payment_status' => 'awaiting_payment',
+            'payment_method' => 'swish', 'shipping_method' => 'pickup',
+        ]);
+
+        $this->postJson(route('swish.callback', $order->order_number), [
+            'status' => 'DECLINED',
+        ])->assertOk();
+
+        $order->refresh();
+        $this->assertSame(Order::STATUS_CANCELLED, $order->status);
+        $this->assertSame('declined', $order->payment_status);
+    }
 }
