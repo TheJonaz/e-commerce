@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -85,7 +86,7 @@ class InstallController extends Controller
             'shop.locale' => $data['shop_locale'],
         ]);
 
-        User::create([
+        $admin = User::create([
             'name' => $data['admin_name'],
             'email' => $data['admin_email'],
             'password' => Hash::make($data['admin_password']),
@@ -98,7 +99,10 @@ class InstallController extends Controller
 
         $this->lock();
 
-        return redirect('/')->with('status', 'Installation complete.');
+        Auth::login($admin);
+        $request->session()->regenerate();
+
+        return redirect('/admin');
     }
 
     public function testDatabase(Request $request): JsonResponse

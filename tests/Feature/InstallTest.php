@@ -62,11 +62,13 @@ class InstallTest extends TestCase
             'shop_name' => 'My Test Shop',
             'shop_currency' => 'SEK',
             'shop_locale' => 'sv',
-        ])->assertRedirect('/');
+        ])->assertRedirect('/admin');
 
         $this->assertFileExists(storage_path('install.lock'));
         $this->assertSame(1, User::count());
         $this->assertSame(User::ROLE_ADMIN, User::first()->role);
+        $this->assertTrue(auth()->check());
+        $this->assertSame('admin@example.test', auth()->user()->email);
         $this->assertSame('My Test Shop', Setting::get('shop.name'));
         $this->assertSame('SEK', Setting::get('shop.currency'));
     }
