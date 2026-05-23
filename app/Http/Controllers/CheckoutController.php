@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderPlaced;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\User;
 use App\Modules\PaymentRegistry;
 use App\Modules\ShippingRegistry;
 use App\Support\CartService;
@@ -12,6 +14,7 @@ use App\Support\Vat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -137,11 +140,33 @@ class CheckoutController extends Controller
 
         $redirect = $payment->process($order);
 
+        $this->sendOrderEmails($order);
+
         $this->cart->clear();
 
         return $redirect
             ? redirect()->away($redirect)
             : redirect()->route('checkout.thanks', $order->order_number);
+    }
+
+    protected function sendOrderEmails(Order $order): void
+    {
+        try {
+            Mail::to($order->email)->send(new OrderPlaced($order, forAdmin: false));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $adminEmail = setting('shop.admin_email')
+            ?: optional(User::where('role', User::ROLE_ADMIN)->orderBy('id')->first())->email;
+
+        if ($adminEmail && $adminEmail !== $order->email) {
+            try {
+                Mail::to($adminEmail)->send(new OrderPlaced($order, forAdmin: true));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     public function thanks(string $orderNumber)

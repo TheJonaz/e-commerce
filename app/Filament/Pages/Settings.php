@@ -33,6 +33,7 @@ class Settings extends Page implements HasSchemas
             'shop_name' => Setting::get('shop.name', config('app.name')),
             'shop_currency' => Setting::get('shop.currency', 'SEK'),
             'shop_locale' => Setting::get('shop.locale', 'sv'),
+            'shop_admin_email' => Setting::get('shop.admin_email', ''),
             'flat_rate_price' => Setting::get('shipping.flat_rate.price', '49'),
             'flat_rate_free_threshold' => Setting::get('shipping.flat_rate.free_threshold', '0'),
             'flat_rate_vat_rate' => Setting::get('shipping.flat_rate.vat_rate', '25'),
@@ -48,9 +49,13 @@ class Settings extends Page implements HasSchemas
             ->statePath('data')
             ->components([
                 Section::make('Shop')
-                    ->columns(3)
+                    ->columns(2)
                     ->schema([
                         TextInput::make('shop_name')->label('Shop name')->required(),
+                        TextInput::make('shop_admin_email')
+                            ->label('Admin email')
+                            ->email()
+                            ->helperText('Receives a copy of every order. Falls back to the first admin user.'),
                         Select::make('shop_currency')
                             ->label('Currency')
                             ->options(array_combine(
@@ -96,6 +101,7 @@ class Settings extends Page implements HasSchemas
 
                     Setting::many([
                         'shop.name' => $data['shop_name'],
+                        'shop.admin_email' => $data['shop_admin_email'] ?? '',
                         'shop.currency' => $data['shop_currency'],
                         'shop.locale' => $data['shop_locale'],
                         'shipping.flat_rate.price' => $data['flat_rate_price'],

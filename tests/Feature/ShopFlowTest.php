@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\OrderPlaced;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ShopFlowTest extends TestCase
@@ -134,6 +138,57 @@ class ShopFlowTest extends TestCase
         $this->assertSame('flat-rate', $order->shipping_method);
         $this->assertSame('bank-transfer', $order->payment_method);
         $this->assertSame('awaiting_transfer', $order->payment_status);
+    }
+
+    public function test_order_emails_are_sent(): void
+    {
+        Mail::fake();
+
+        // Make sure there's an admin to fall back to
+        User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.test',
+            'password' => bcrypt('x'),
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+
+        $this->post(route('checkout.store'), [
+            'email' => 'buyer@example.test',
+            'name' => 'Test Köpare',
+            'street' => 'Storgatan 1',
+            'zip' => '11122',
+            'city' => 'Stockholm',
+            'country' => 'SE',
+            'shipping_method' => 'pickup',
+            'payment_method' => 'invoice',
+        ])->assertRedirect();
+
+        Mail::assertSent(OrderPlaced::class, function (OrderPlaced $mail) {
+            return $mail->hasTo('buyer@example.test') && ! $mail->forAdmin;
+        });
+        Mail::assertSent(OrderPlaced::class, function (OrderPlaced $mail) {
+            return $mail->hasTo('admin@example.test') && $mail->forAdmin;
+        });
+    }
+
+    public function test_order_email_admin_copy_uses_setting_when_present(): void
+    {
+        Mail::fake();
+        Setting::put('shop.admin_email', 'orders@thern.io');
+
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('checkout.store'), [
+            'email' => 'buyer@example.test',
+            'name' => 'X',
+            'street' => 'S', 'zip' => '1', 'city' => 'C', 'country' => 'SE',
+            'shipping_method' => 'pickup', 'payment_method' => 'invoice',
+        ])->assertRedirect();
+
+        Mail::assertSent(OrderPlaced::class, fn ($m) => $m->hasTo('orders@thern.io') && $m->forAdmin);
     }
 
     public function test_module_registries_have_default_modules(): void
