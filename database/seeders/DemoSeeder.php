@@ -8,8 +8,11 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\Visit;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DemoSeeder extends Seeder
 {
@@ -113,6 +116,58 @@ class DemoSeeder extends Seeder
             }
         }
 
-        $this->command?->info("Seeded {$categories->count()} categories, " . count($products) . " products, " . count($customers) . " customers.");
+        $visits = $this->seedVisits();
+
+        $this->command?->info("Seeded {$categories->count()} categories, " . count($products) . " products, " . count($customers) . " customers, {$visits} visits.");
+    }
+
+    protected function seedVisits(): int
+    {
+        // Weighted country distribution for fake traffic
+        $weights = [
+            'SE' => 60, 'NO' => 8, 'DK' => 6, 'FI' => 4, 'DE' => 6, 'GB' => 5,
+            'US' => 4, 'NL' => 2, 'FR' => 2, 'PL' => 1, 'IT' => 1, 'ES' => 1,
+        ];
+        $pool = [];
+        foreach ($weights as $code => $w) {
+            $pool = array_merge($pool, array_fill(0, $w, $code));
+        }
+        $urls = ['/', '/categories/klader', '/categories/skor', '/categories/mat', '/products/jeans-slim', '/products/sneakers-vit', '/cart'];
+
+        $rows = [];
+        $now = Carbon::now();
+
+        for ($daysAgo = 29; $daysAgo >= 0; $daysAgo--) {
+            $day = $now->copy()->subDays($daysAgo)->startOfDay();
+            // Weekly seasonality: weekends quieter (factor 0.65), weekdays higher.
+            $weekday = $day->dayOfWeek;
+            $base = in_array($weekday, [0, 6], true) ? rand(40, 110) : rand(90, 240);
+
+            // Slight upward trend
+            $trend = (int) round($base * (1 + (29 - $daysAgo) * 0.01));
+
+            for ($i = 0; $i < $trend; $i++) {
+                $rows[] = [
+                    'session_id' => Str::random(32),
+                    'ip' => sprintf('%d.%d.%d.%d', rand(1, 250), rand(0, 255), rand(0, 255), rand(1, 254)),
+                    'country' => $pool[array_rand($pool)],
+                    'url' => $urls[array_rand($urls)],
+                    'referer' => rand(0, 1) ? 'https://www.google.com/' : null,
+                    'user_agent_hash' => substr(sha1('demo-ua-' . rand(1, 50)), 0, 64),
+                    'visited_at' => $day->copy()->addSeconds(rand(0, 86399)),
+                    'created_at' => $day->copy()->addSeconds(rand(0, 86399)),
+                    'updated_at' => $day->copy()->addSeconds(rand(0, 86399)),
+                ];
+            }
+
+            // Flush every ~5k rows
+            if (count($rows) >= 5000) {
+                Visit::insert($rows);
+                $rows = [];
+            }
+        }
+        if ($rows) Visit::insert($rows);
+
+        return Visit::count();
     }
 }
