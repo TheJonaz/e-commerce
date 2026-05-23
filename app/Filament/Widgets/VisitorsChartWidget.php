@@ -12,7 +12,9 @@ class VisitorsChartWidget extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = ['default' => 'full', 'md' => 1];
+
+    protected ?string $maxHeight = '240px';
 
     protected function getData(): array
     {
