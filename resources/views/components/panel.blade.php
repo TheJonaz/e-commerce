@@ -7,43 +7,43 @@
     $key = e($panelKey);
 @endphp
 
-@once
-    <style>
-        .ec-panel-header {
-            display: flex !important;
-            align-items: stretch;
-            justify-content: space-between;
-            padding: 0 0 0 1.5rem;
-            min-height: 44px;
-            border-bottom: 1px solid rgba(0,0,0,0.08);
-        }
-        .ec-panel-header[data-collapsed="true"] { border-bottom: 0; }
-        .ec-panel-title { margin: 0; padding: 0.5rem 0; align-self: center; flex: 1; min-width: 0; }
-        .ec-panel-actions { display: flex; align-items: stretch; flex-shrink: 0; margin-left: auto; }
-        .ec-panel-btn {
-            width: 46px;
-            border: 0;
-            border-radius: 0;
-            background: transparent;
-            color: #334155;
-            cursor: pointer;
-            font: inherit;
-            font-weight: 400;
-            font-size: 1rem;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-        }
-        .ec-panel-btn:hover { background: rgba(0,0,0,0.06); }
-        .ec-panel-btn-close { font-size: 1.05rem; border-top-right-radius: 0.75rem; }
-        .ec-panel-btn-close:hover { background: #e81123; color: #fff; }
-        .dark .ec-panel-btn { color: #cbd5e1; }
-        .dark .ec-panel-btn:hover { background: rgba(255,255,255,0.06); }
-        .dark .ec-panel-btn-close:hover { background: #e81123; color: #fff; }
-    </style>
-@endonce
+<style>
+    .ec-panel { margin-bottom: 1.5rem; }
+    .ec-panel-header {
+        display: flex !important;
+        align-items: stretch !important;
+        justify-content: space-between !important;
+        padding: 0 0 0 1.5rem !important;
+        min-height: 44px !important;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .ec-panel-header[data-collapsed="true"] { border-bottom: 0; }
+    .ec-panel-title { margin: 0 !important; padding: 0.5rem 0 !important; align-self: center !important; flex: 1 1 auto !important; min-width: 0 !important; }
+    .ec-panel-actions { display: flex !important; align-items: stretch !important; flex-shrink: 0 !important; margin-left: auto !important; }
+    .ec-panel-btn {
+        width: 46px !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent;
+        color: #334155;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 400;
+        font-size: 1rem;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1;
+    }
+    .ec-panel-btn:hover { background: rgba(0,0,0,0.06); }
+    .ec-panel-btn-close { font-size: 1.05rem; border-top-right-radius: 0.75rem !important; }
+    .ec-panel-btn-close:hover { background: #e81123; color: #fff; }
+    .dark .ec-panel-btn { color: #cbd5e1; }
+    .dark .ec-panel-btn:hover { background: rgba(255,255,255,0.06); }
+    .dark .ec-panel-btn-close:hover { background: #e81123; color: #fff; }
+    .ec-panel-body { padding: 1.25rem 1.5rem !important; }
+</style>
 
 <div
     x-data="{
@@ -64,8 +64,7 @@
     })"
     x-show="state !== 'closed'"
     x-cloak
-    class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10"
-    style="margin-bottom: 1.5rem"
+    class="fi-section ec-panel rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10"
 >
     <header
         :data-collapsed="state === 'collapsed'"
@@ -80,7 +79,7 @@
                 class="ec-panel-btn ec-panel-btn-close">✕</button>
         </div>
     </header>
-    <div x-show="state === 'open'" x-collapse class="px-6 py-4">
+    <div x-show="state === 'open'" x-collapse class="ec-panel-body">
         {{ $slot }}
     </div>
 </div>
