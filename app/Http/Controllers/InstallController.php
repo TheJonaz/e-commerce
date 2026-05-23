@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,10 @@ class InstallController extends Controller
         if (! app()->environment('testing')) {
             $this->writeEnv($data);
 
+            // Apply the freshly-written DB config to the current process so
+            // Artisan::call('migrate') and Setting/User writes below hit the
+            // database the user just picked, not whatever was loaded at boot.
+            $this->applyDbConfig($data);
             Artisan::call('config:clear');
 
             try {
@@ -66,7 +71,12 @@ class InstallController extends Controller
                 ]);
             }
 
-            Artisan::call('migrate', ['--force' => true]);
+            $exit = Artisan::call('migrate', ['--force' => true]);
+            if ($exit !== 0) {
+                return back()->withInput()->withErrors([
+                    'db_connection' => 'Migration failed: ' . trim(Artisan::output()),
+                ]);
+            }
         }
 
         Setting::many([
@@ -178,6 +188,21 @@ class InstallController extends Controller
         }
 
         return $raw;
+    }
+
+    protected function applyDbConfig(array $data): void
+    {
+        Config::set('database.default', $data['db_connection']);
+
+        if ($data['db_connection'] === 'mysql') {
+            Config::set('database.connections.mysql.host', $data['db_host'] ?? '127.0.0.1');
+            Config::set('database.connections.mysql.port', $data['db_port'] ?? 3306);
+            Config::set('database.connections.mysql.database', $data['db_database']);
+            Config::set('database.connections.mysql.username', $data['db_username'] ?? '');
+            Config::set('database.connections.mysql.password', $data['db_password'] ?? '');
+        } else {
+            Config::set('database.connections.sqlite.database', $data['db_database']);
+        }
     }
 
     protected function isLocked(): bool
