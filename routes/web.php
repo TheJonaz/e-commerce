@@ -24,6 +24,8 @@ Route::middleware('web')->group(function () {
 
     Route::get('/categories/{slug}', [ShopController::class, 'category'])->name('shop.category');
     Route::get('/products/{slug}', [ShopController::class, 'product'])->name('shop.product');
+    Route::get('/search', [ShopController::class, 'search'])->name('shop.search');
+    Route::get('/search/suggest', [ShopController::class, 'suggest'])->name('shop.suggest');
 
     Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
     Route::post('/cart/add/{product:slug}', [CartController::class, 'add'])->name('cart.add');

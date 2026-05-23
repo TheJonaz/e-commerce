@@ -431,4 +431,59 @@ class ShopFlowTest extends TestCase
 
         $this->assertSame(0.0, $postnord->cost($cart));
     }
+
+    public function test_search_finds_products_by_name(): void
+    {
+        Product::create([
+            'sku' => 'NEEDLE-1', 'slug' => 'unique-needle',
+            'name' => ['sv' => 'Unik nålprodukt', 'en' => 'Unique needle'],
+            'price' => 99, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+
+        $this->get(route('shop.search', ['q' => 'nålprodukt']))
+            ->assertOk()
+            ->assertSee('Unik nålprodukt')
+            ->assertSee('Sökresultat för');
+    }
+
+    public function test_search_finds_products_by_sku(): void
+    {
+        Product::create([
+            'sku' => 'XYZ-12345', 'slug' => 'sku-only',
+            'name' => ['sv' => 'SKU only', 'en' => 'SKU only'],
+            'price' => 50, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+
+        $this->get(route('shop.search', ['q' => 'XYZ-12345']))
+            ->assertOk()
+            ->assertSee('SKU only');
+    }
+
+    public function test_search_empty_state_when_no_query(): void
+    {
+        $this->get(route('shop.search'))
+            ->assertOk()
+            ->assertSee('Skriv vad du letar efter');
+    }
+
+    public function test_suggest_returns_json_with_top_results(): void
+    {
+        Product::create([
+            'sku' => 'SUG-1', 'slug' => 'suggest-me',
+            'name' => ['sv' => 'Suggesto produkt', 'en' => 'Suggesto product'],
+            'price' => 50, 'vat_rate' => 25, 'is_active' => true,
+        ]);
+
+        $this->getJson(route('shop.suggest', ['q' => 'Suggesto']))
+            ->assertOk()
+            ->assertJsonStructure(['results' => [['slug', 'name', 'price', 'url']]])
+            ->assertJsonFragment(['slug' => 'suggest-me']);
+    }
+
+    public function test_suggest_requires_minimum_query_length(): void
+    {
+        $this->getJson(route('shop.suggest', ['q' => 'a']))
+            ->assertOk()
+            ->assertJson(['results' => []]);
+    }
 }

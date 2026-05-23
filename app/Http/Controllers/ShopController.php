@@ -4,9 +4,73 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class ShopController extends Controller
 {
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $products = collect();
+        if ($q !== '') {
+            $products = $this->queryProducts($q)->paginate(24)->withQueryString();
+        }
+
+        return view('shop.search', [
+            'q' => $q,
+            'products' => $products,
+            'categories' => Category::where('is_active', true)->orderBy('position')->get(),
+        ]);
+    }
+
+    public function suggest(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        if (strlen($q) < 2) {
+            return response()->json(['results' => []]);
+        }
+
+        $results = $this->queryProducts($q)
+            ->limit(6)
+            ->get()
+            ->map(fn (Product $p) => [
+                'slug' => $p->slug,
+                'name' => $p->localized('name'),
+                'price' => \App\Support\Money::format($p->displayPrice(), setting('shop.currency', 'SEK')),
+                'image' => $p->imageUrl(),
+                'url' => route('shop.product', $p->slug),
+            ]);
+
+        return response()->json(['results' => $results]);
+    }
+
+    /** Shared query builder used by both search and suggest. */
+    protected function queryProducts(string $q)
+    {
+        $clean = fn (string $s) => '%' . str_replace(['%', '_'], ['\%', '\_'], $s) . '%';
+        // SQLite stores JSON with \u-escaped non-ASCII; MySQL stores raw UTF-8.
+        // We LIKE against both forms so search works across both drivers.
+        $raw = $clean($q);
+        $jsonEncoded = trim(json_encode($q, JSON_UNESCAPED_SLASHES), '"');
+        $escaped = $jsonEncoded !== $q ? $clean($jsonEncoded) : null;
+
+        return Product::where('is_active', true)
+            ->where(function ($w) use ($raw, $escaped) {
+                $w->where('name', 'LIKE', $raw)
+                    ->orWhere('sku', 'LIKE', $raw)
+                    ->orWhere('short_description', 'LIKE', $raw)
+                    ->orWhere('description', 'LIKE', $raw);
+                if ($escaped) {
+                    $w->orWhere('name', 'LIKE', $escaped)
+                        ->orWhere('short_description', 'LIKE', $escaped)
+                        ->orWhere('description', 'LIKE', $escaped);
+                }
+            })
+            ->orderByDesc('updated_at');
+    }
+
     public function home()
     {
         return view('shop.home', [

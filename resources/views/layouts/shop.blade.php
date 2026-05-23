@@ -32,9 +32,42 @@
         .container { max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; }
         .topbar { display: flex; align-items: center; gap: 1.5rem; }
         .brand { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
-        nav.main { display: flex; gap: 1.25rem; flex: 1; font-size: 0.9rem; }
+        nav.main { display: flex; gap: 1.25rem; font-size: 0.9rem; }
         nav.main a { color: var(--muted); transition: color 0.15s; }
         nav.main a:hover, nav.main a.active { color: var(--text); }
+
+        .search-wrap { position: relative; flex: 1; max-width: 320px; margin-left: auto; }
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 0.85rem 0.5rem 2rem;
+            background: var(--accent);
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font: inherit; font-size: 0.875rem;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .search-input:focus { outline: none; background: var(--card); border-color: var(--border); }
+        .search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.85rem; pointer-events: none; }
+        .search-results {
+            position: absolute; top: calc(100% + 0.35rem); left: 0; right: 0;
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+            box-shadow: 0 12px 28px -8px rgba(15,23,42,0.18);
+            overflow: hidden;
+            z-index: 60;
+        }
+        .search-results a {
+            display: grid; grid-template-columns: 36px 1fr auto; gap: 0.65rem;
+            padding: 0.55rem 0.85rem; align-items: center;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .search-results a:last-child { border-bottom: 0; }
+        .search-results a:hover { background: var(--accent); }
+        .search-thumb { width: 36px; height: 36px; border-radius: 6px; background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%); display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 1rem; overflow: hidden; }
+        .search-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .search-price { color: var(--price); font-weight: 600; font-variant-numeric: tabular-nums; font-size: 0.825rem; }
+        .search-empty { padding: 0.7rem 0.85rem; color: var(--muted); font-size: 0.85rem; }
+
         .cart-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; transition: background 0.15s; }
         .cart-link:hover { background: var(--accent); }
         .cart-badge { background: var(--primary); color: white; border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; font-weight: 600; transition: transform 0.2s ease; }
@@ -148,6 +181,13 @@
                     <a href="{{ route('shop.category', $cat->slug) }}" class="{{ request()->routeIs('shop.category') && request()->route('slug') === $cat->slug ? 'active' : '' }}">{{ $cat->localized('name') }}</a>
                 @endforeach
             </nav>
+
+            <form class="search-wrap" method="GET" action="{{ route('shop.search') }}" role="search" autocomplete="off">
+                <span class="search-icon">⌕</span>
+                <input id="site-search" class="search-input" type="search" name="q" value="{{ request('q') }}"
+                    placeholder="Sök produkter…" aria-label="Sök produkter">
+                <div id="site-search-results" class="search-results" style="display: none;"></div>
+            </form>
             <div style="display: inline-flex; gap: 0.5rem; align-items: center;">
                 @auth('customer')
                     <a href="{{ route('account.show') }}" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; color: var(--muted); transition: color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">{{ auth('customer')->user()->name }}</a>
@@ -217,6 +257,68 @@
                 badge.classList.remove('bump');
                 requestAnimationFrame(() => badge.classList.add('bump'));
                 setTimeout(() => badge.classList.remove('bump'), 220);
+            }
+
+            // --- Search autosuggest ---
+            const searchInput = document.getElementById('site-search');
+            const searchResults = document.getElementById('site-search-results');
+            let searchAbort = null;
+            let searchDebounce = null;
+
+            function hideSearchResults() {
+                if (! searchResults) return;
+                searchResults.style.display = 'none';
+                searchResults.innerHTML = '';
+            }
+
+            function renderSearchResults(items) {
+                if (! searchResults) return;
+                if (! items.length) {
+                    searchResults.innerHTML = '<div class="search-empty">Inga träffar</div>';
+                } else {
+                    searchResults.innerHTML = items.map(r => `
+                        <a href="${r.url}">
+                            <span class="search-thumb">${r.image ? `<img src="${r.image}" alt="">` : '🛍'}</span>
+                            <span>${r.name}</span>
+                            <span class="search-price">${r.price}</span>
+                        </a>
+                    `).join('');
+                }
+                searchResults.style.display = '';
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(searchDebounce);
+                    const q = searchInput.value.trim();
+                    if (q.length < 2) { hideSearchResults(); return; }
+
+                    searchDebounce = setTimeout(async () => {
+                        if (searchAbort) searchAbort.abort();
+                        searchAbort = new AbortController();
+                        try {
+                            const res = await fetch('{{ route('shop.suggest') }}?q=' + encodeURIComponent(q), {
+                                headers: { 'Accept': 'application/json' },
+                                signal: searchAbort.signal,
+                            });
+                            const body = await res.json();
+                            renderSearchResults(body.results || []);
+                        } catch (e) {
+                            if (e.name !== 'AbortError') hideSearchResults();
+                        }
+                    }, 180);
+                });
+
+                searchInput.addEventListener('blur', () => {
+                    // Slight delay so a click on a result is processed first.
+                    setTimeout(hideSearchResults, 150);
+                });
+
+                searchInput.addEventListener('focus', () => {
+                    if (searchInput.value.trim().length >= 2 && searchResults?.children.length) {
+                        searchResults.style.display = '';
+                    }
+                });
             }
 
             document.addEventListener('submit', async (e) => {
