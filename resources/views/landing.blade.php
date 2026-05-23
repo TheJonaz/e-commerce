@@ -21,6 +21,8 @@
         .btn-secondary { background: white; color: #1a1a1a; border: 1px solid #d6d3d1; }
         .btn-secondary:hover { background: #f5f5f4; }
         footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #e7e5e4; color: #999; font-size: 0.9rem; }
+        footer a { color: #525252; text-decoration: none; border-bottom: 1px dotted #c7c7c7; }
+        footer a:hover { color: #1d4ed8; border-bottom-color: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -49,7 +51,8 @@
         </div>
 
         <footer>
-            {{ $shopName }} · {{ $currency }} · open-source MIT
+            {{ $shopName }} · {{ $currency }} · open-source MIT · by
+            <a href="https://www.thern.io" target="_blank" rel="noopener noreferrer">Thern AI Solutions</a>
         </footer>
     </div>
 </body>
