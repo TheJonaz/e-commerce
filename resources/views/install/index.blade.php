@@ -219,6 +219,8 @@
         </div>
     </form>
 
+    @include('partials.credit')
+
     <script>
         const i18n = {
             sv: {
