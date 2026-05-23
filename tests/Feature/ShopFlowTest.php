@@ -248,4 +248,29 @@ class ShopFlowTest extends TestCase
             ->assertStatus(400)
             ->assertSee('webhook secret not configured');
     }
+
+    public function test_klarna_gateway_skipped_without_credentials(): void
+    {
+        $payments = app(\App\Modules\PaymentRegistry::class)->all();
+        $this->assertArrayNotHasKey('klarna', $payments);
+    }
+
+    public function test_klarna_cancel_route_aborts_order(): void
+    {
+        $order = Order::create([
+            'order_number' => 'ORD-KL-1',
+            'email' => 'x@example.test',
+            'currency' => 'SEK',
+            'subtotal_excl_vat' => 80, 'vat_total' => 20, 'grand_total' => 100,
+            'status' => Order::STATUS_PENDING, 'payment_status' => 'awaiting_payment',
+            'payment_method' => 'klarna', 'shipping_method' => 'pickup',
+        ]);
+
+        $this->get(route('klarna.cancel', $order->order_number))
+            ->assertRedirect(route('cart.show'));
+
+        $order->refresh();
+        $this->assertSame(Order::STATUS_CANCELLED, $order->status);
+        $this->assertSame('cancelled', $order->payment_status);
+    }
 }

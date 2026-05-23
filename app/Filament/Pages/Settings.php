@@ -46,6 +46,9 @@ class Settings extends Page implements HasSchemas
             'stripe_secret_key' => Setting::get('payment.stripe.secret_key', ''),
             'stripe_webhook_secret' => Setting::get('payment.stripe.webhook_secret', ''),
             'stripe_test_mode' => (bool) Setting::get('payment.stripe.test_mode', '1'),
+            'klarna_username' => Setting::get('payment.klarna.username', ''),
+            'klarna_password' => Setting::get('payment.klarna.password', ''),
+            'klarna_test_mode' => (bool) Setting::get('payment.klarna.test_mode', '1'),
         ]);
     }
 
@@ -99,6 +102,22 @@ class Settings extends Page implements HasSchemas
                         TextInput::make('bank_transfer_bg')->label('Bankgiro / account number')->columnSpanFull(),
                     ]),
 
+                Section::make('Klarna')
+                    ->description('Lämna tomt för att stänga av Klarna i kassan. API-credentials hittar du i Klarna Merchant Portal → Settings → API credentials.')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('klarna_test_mode')
+                            ->label('Testläge (playground)')
+                            ->helperText('Använd playground-credentials tills du är redo att ta riktig betalning.')
+                            ->columnSpanFull(),
+                        TextInput::make('klarna_username')
+                            ->label('Username / UID')
+                            ->placeholder('PK… (test) eller K… (live)'),
+                        TextInput::make('klarna_password')
+                            ->label('Password')
+                            ->password()->revealable(),
+                    ]),
+
                 Section::make('Stripe')
                     ->description('Lämna tomt för att stänga av Stripe i kassan. Skaffa nycklar på dashboard.stripe.com → Developers → API keys.')
                     ->columns(2)
@@ -148,6 +167,9 @@ class Settings extends Page implements HasSchemas
                         'payment.stripe.secret_key' => $data['stripe_secret_key'] ?? '',
                         'payment.stripe.webhook_secret' => $data['stripe_webhook_secret'] ?? '',
                         'payment.stripe.test_mode' => $data['stripe_test_mode'] ? '1' : '0',
+                        'payment.klarna.username' => $data['klarna_username'] ?? '',
+                        'payment.klarna.password' => $data['klarna_password'] ?? '',
+                        'payment.klarna.test_mode' => $data['klarna_test_mode'] ? '1' : '0',
                     ]);
 
                     Notification::make()

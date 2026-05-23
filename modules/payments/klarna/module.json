@@ -1,0 +1,7 @@
+{
+    "name": "klarna",
+    "label": "Klarna",
+    "version": "1.0.0",
+    "namespace": "Modules\\Payments\\Klarna",
+    "provider": "Modules\\Payments\\Klarna\\KlarnaServiceProvider"
+}
