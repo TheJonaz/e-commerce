@@ -43,6 +43,7 @@
     .dark .ec-panel-btn:hover { background: rgba(255,255,255,0.06); }
     .dark .ec-panel-btn-close:hover { background: #e81123; color: #fff; }
     .ec-panel-body { padding: 1.25rem 1.5rem !important; }
+    .ec-panel-closed { display: none !important; }
 </style>
 
 <div
@@ -62,8 +63,8 @@
     x-init="window.addEventListener('panel-state-changed', (e) => {
         if (e.detail.key === '{{ $key }}') state = e.detail.state;
     })"
-    x-show="state !== 'closed'"
     x-cloak
+    :class="state === 'closed' ? 'ec-panel-closed' : ''"
     class="fi-section ec-panel rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10"
 >
     <header
@@ -79,7 +80,7 @@
                 class="ec-panel-btn ec-panel-btn-close">✕</button>
         </div>
     </header>
-    <div x-show="state === 'open'" x-collapse class="ec-panel-body">
+    <div x-show="state === 'open'" class="ec-panel-body">
         {{ $slot }}
     </div>
 </div>
