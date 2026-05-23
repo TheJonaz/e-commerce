@@ -139,7 +139,7 @@
         </div>
     </div>
 
-    <form method="POST" action="/install">
+    <form method="POST" action="{{ route('install') }}">
         @csrf
 
         <div class="grid">
