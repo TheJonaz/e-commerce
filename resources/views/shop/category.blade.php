@@ -16,18 +16,7 @@
     @else
         <div class="product-grid">
             @foreach ($products as $product)
-                <a class="product-card" href="{{ route('shop.product', $product->slug) }}">
-                    @if ($product->imageUrl())
-                        <img src="{{ $product->imageUrl() }}" alt="{{ $product->localized('name') }}" style="aspect-ratio: 1/1; object-fit: cover;">
-                    @else
-                        <div class="ph">🛍</div>
-                    @endif
-                    <div class="body">
-                        <div class="name">{{ $product->localized('name') }}</div>
-                        <div class="price">{{ App\Support\Money::format($product->price, setting('shop.currency', 'SEK')) }}</div>
-                        <div class="vat">{{ __('shop.product.price_incl_vat') }}</div>
-                    </div>
-                </a>
+                @include('shop._product-card', ['product' => $product])
             @endforeach
         </div>
 

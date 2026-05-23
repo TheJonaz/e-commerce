@@ -63,17 +63,7 @@
         <h2 style="font-size: 1.1rem; margin: 3rem 0 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">Liknande produkter</h2>
         <div class="product-grid">
             @foreach ($related as $r)
-                <a class="product-card" href="{{ route('shop.product', $r->slug) }}">
-                    @if ($r->imageUrl())
-                        <img src="{{ $r->imageUrl() }}" alt="{{ $r->localized('name') }}" style="aspect-ratio: 1/1; object-fit: cover;">
-                    @else
-                        <div class="ph">🛍</div>
-                    @endif
-                    <div class="body">
-                        <div class="name">{{ $r->localized('name') }}</div>
-                        <div class="price">{{ App\Support\Money::format($r->price, setting('shop.currency', 'SEK')) }}</div>
-                    </div>
-                </a>
+                @include('shop._product-card', ['product' => $r])
             @endforeach
         </div>
     @endif
