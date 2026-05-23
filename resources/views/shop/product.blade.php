@@ -25,12 +25,16 @@
                 <div style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1.25rem;">{{ __('shop.product.sku') }}: {{ $product->sku }}</div>
             @endif
 
+            @php $pricesInclVat = (bool) setting('shop.prices_include_vat', '1'); @endphp
             <div style="font-size: 2rem; font-weight: 700; color: var(--price); margin-bottom: 0.25rem;">
-                {{ App\Support\Money::format($product->price, setting('shop.currency', 'SEK')) }}
+                {{ App\Support\Money::format($product->displayPrice(), setting('shop.currency', 'SEK')) }}
             </div>
             <div style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
-                {{ App\Support\Money::format($product->priceExclVat(), setting('shop.currency', 'SEK')) }} {{ __('shop.product.price_excl_vat') }}
+                {{ $product->vatLabel() }}
                 · {{ rtrim(rtrim(number_format($product->vat_rate, 2, '.', ''), '0'), '.') }} % moms
+                @if (! $pricesInclVat)
+                    · totalt {{ App\Support\Money::format($product->price, setting('shop.currency', 'SEK')) }} inkl. moms
+                @endif
             </div>
 
             @if ($product->localized('short_description'))

@@ -7,6 +7,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -34,6 +35,7 @@ class Settings extends Page implements HasSchemas
             'shop_currency' => Setting::get('shop.currency', 'SEK'),
             'shop_locale' => Setting::get('shop.locale', 'sv'),
             'shop_admin_email' => Setting::get('shop.admin_email', ''),
+            'shop_prices_include_vat' => (bool) Setting::get('shop.prices_include_vat', '1'),
             'flat_rate_price' => Setting::get('shipping.flat_rate.price', '49'),
             'flat_rate_free_threshold' => Setting::get('shipping.flat_rate.free_threshold', '0'),
             'flat_rate_vat_rate' => Setting::get('shipping.flat_rate.vat_rate', '25'),
@@ -67,6 +69,11 @@ class Settings extends Page implements HasSchemas
                             ->label('Language')
                             ->options(['sv' => 'Svenska', 'en' => 'English'])
                             ->required(),
+                        Toggle::make('shop_prices_include_vat')
+                            ->label('Priser inkluderar moms')
+                            ->helperText('På: priset du anger för en produkt är vad kunden betalar (B2C-standard i Sverige). Av: priset är exkl. moms och moms läggs på i kassan (B2B).')
+                            ->default(true)
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Flat-rate shipping')
@@ -104,6 +111,7 @@ class Settings extends Page implements HasSchemas
                         'shop.admin_email' => $data['shop_admin_email'] ?? '',
                         'shop.currency' => $data['shop_currency'],
                         'shop.locale' => $data['shop_locale'],
+                        'shop.prices_include_vat' => $data['shop_prices_include_vat'] ? '1' : '0',
                         'shipping.flat_rate.price' => $data['flat_rate_price'],
                         'shipping.flat_rate.free_threshold' => $data['flat_rate_free_threshold'],
                         'shipping.flat_rate.vat_rate' => $data['flat_rate_vat_rate'],

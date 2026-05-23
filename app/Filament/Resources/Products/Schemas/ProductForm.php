@@ -73,7 +73,9 @@ class ProductForm
                         ->numeric()
                         ->suffix(setting('shop.currency', 'SEK'))
                         ->step(0.01)
-                        ->helperText('Including VAT'),
+                        ->helperText(fn () => (bool) setting('shop.prices_include_vat', '1')
+                            ? 'Pris inkl. moms (det kunden betalar)'
+                            : 'Pris exkl. moms (moms räknas på vid checkout)'),
                     Select::make('vat_rate')
                         ->options(array_combine(
                             array_map(fn ($r) => (string) number_format($r, 2, '.', ''), [Vat::RATE_STANDARD, Vat::RATE_REDUCED, Vat::RATE_LOW, Vat::RATE_NONE]),

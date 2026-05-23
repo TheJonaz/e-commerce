@@ -32,8 +32,8 @@
         @endif
         <div class="product-card-name">{{ $product->localized('name') }}</div>
         <div class="product-card-foot">
-            <span class="product-card-price">{{ App\Support\Money::format($product->price, $currency) }}</span>
-            <span class="product-card-vat">{{ __('shop.product.price_incl_vat') }}</span>
+            <span class="product-card-price">{{ App\Support\Money::format($product->displayPrice(), $currency) }}</span>
+            <span class="product-card-vat">{{ $product->vatLabel() }}</span>
         </div>
     </a>
 </div>

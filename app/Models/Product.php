@@ -44,6 +44,21 @@ class Product extends Model
         return round((float) $this->price - $this->priceExclVat(), 2);
     }
 
+    /** Display price honoring the shop.prices_include_vat setting (gross by default). */
+    public function displayPrice(): float
+    {
+        return (bool) setting('shop.prices_include_vat', '1')
+            ? (float) $this->price
+            : $this->priceExclVat();
+    }
+
+    public function vatLabel(): string
+    {
+        return (bool) setting('shop.prices_include_vat', '1')
+            ? __('shop.product.price_incl_vat')
+            : __('shop.product.price_excl_vat');
+    }
+
     public function imageUrl(): ?string
     {
         if (! $this->image_path) {
