@@ -62,6 +62,16 @@
             <div style="font-size: 0.9rem;">
                 {{ $order->shipping_method }} <span style="color: var(--muted);">({{ $order->shipping_status }})</span>
             </div>
+            @if ($order->tracking_number || $order->tracking_url)
+                <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+                    @if ($order->tracking_number)
+                        <div style="color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">{{ $order->tracking_number }}</div>
+                    @endif
+                    @if ($order->tracking_url)
+                        <a href="{{ $order->tracking_url }}" target="_blank" rel="noopener" style="display: inline-block; margin-top: 0.4rem; color: var(--primary); text-decoration: underline;">Spåra paket →</a>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 @endsection

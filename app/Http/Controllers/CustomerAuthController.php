@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class CustomerAuthController extends Controller
@@ -87,5 +90,61 @@ class CustomerAuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    // --- Password reset ---
+
+    public function showForgot()
+    {
+        return view('shop.auth.forgot');
+    }
+
+    public function sendResetLink(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+
+        $status = Password::broker('customers')->sendResetLink(['email' => $data['email']]);
+
+        // Always show the same flash so the response doesn't leak whether the address exists.
+        return back()->with('status', 'Om kontot finns har vi skickat en återställningslänk till ' . $data['email'] . '.');
+    }
+
+    public function showReset(string $token, Request $request)
+    {
+        return view('shop.auth.reset', [
+            'token' => $token,
+            'email' => $request->query('email', ''),
+        ]);
+    }
+
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::broker('customers')->reset(
+            $data,
+            function (Customer $customer, string $password) {
+                $customer->password = Hash::make($password);
+                $customer->setRememberToken(Str::random(60));
+                $customer->save();
+                event(new PasswordReset($customer));
+            }
+        );
+
+        if ($status !== Password::PasswordReset) {
+            return back()->withInput($request->only('email'))->withErrors([
+                'email' => match ($status) {
+                    Password::InvalidToken => 'Återställningslänken är ogiltig eller har gått ut.',
+                    Password::InvalidUser => 'Hittade ingen kund med den e-postadressen.',
+                    default => 'Något gick fel, försök igen.',
+                },
+            ]);
+        }
+
+        return redirect()->route('customer.login')->with('status', 'Ditt lösenord har återställts. Logga in.');
     }
 }

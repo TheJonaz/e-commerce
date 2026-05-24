@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Auth\Authenticatable;
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +17,9 @@ use Illuminate\Notifications\Notifiable;
     'accepts_marketing', 'is_business', 'vat_number', 'notes',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class Customer extends Model implements AuthenticatableContract
+class Customer extends Model implements AuthenticatableContract, CanResetPasswordContract
 {
-    use Authenticatable, Notifiable;
+    use Authenticatable, CanResetPassword, Notifiable;
 
     protected function casts(): array
     {

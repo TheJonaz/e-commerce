@@ -721,6 +721,115 @@ class ShopFlowTest extends TestCase
         $response->assertDontSee('<script async src="https://www.googletagmanager.com', escape: false);
     }
 
+    public function test_password_reset_sends_link_for_existing_customer(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $customer = \App\Models\Customer::create([
+            'email' => 'reset@example.test', 'name' => 'R',
+            'password' => \Illuminate\Support\Facades\Hash::make('original'),
+        ]);
+
+        $this->post(route('password.email'), ['email' => 'reset@example.test'])
+            ->assertRedirect();
+
+        \Illuminate\Support\Facades\Notification::assertSentTo(
+            $customer, \Illuminate\Auth\Notifications\ResetPassword::class
+        );
+    }
+
+    public function test_password_reset_does_not_leak_unknown_email(): void
+    {
+        // Should redirect with the same "om kontot finns"-flash whether or not the email exists.
+        $this->post(route('password.email'), ['email' => 'nobody@example.test'])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+    }
+
+    public function test_password_reset_changes_password_with_valid_token(): void
+    {
+        $customer = \App\Models\Customer::create([
+            'email' => 'reset2@example.test', 'name' => 'R',
+            'password' => \Illuminate\Support\Facades\Hash::make('original'),
+        ]);
+        $token = \Illuminate\Support\Facades\Password::broker('customers')->createToken($customer);
+
+        $this->post(route('password.update'), [
+            'token' => $token,
+            'email' => 'reset2@example.test',
+            'password' => 'brand-new-pw',
+            'password_confirmation' => 'brand-new-pw',
+        ])->assertRedirect(route('customer.login'));
+
+        $customer->refresh();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('brand-new-pw', $customer->password));
+    }
+
+    public function test_admin_can_mark_order_shipped_and_email_customer(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $admin = \App\Models\User::create([
+            'name' => 'Admin', 'email' => 'admin@example.test',
+            'password' => \Illuminate\Support\Facades\Hash::make('secret'),
+            'role' => \App\Models\User::ROLE_ADMIN,
+        ]);
+
+        $order = Order::create([
+            'order_number' => 'ORD-SHIP-1',
+            'email' => 'customer@example.test', 'currency' => 'SEK',
+            'subtotal_excl_vat' => 100, 'vat_total' => 25, 'grand_total' => 125,
+            'status' => Order::STATUS_PAID, 'payment_status' => 'paid',
+            'shipping_status' => 'not_shipped',
+            'payment_method' => 'invoice', 'shipping_method' => 'postnord',
+            'shipping_address' => ['name' => 'Buyer', 'street' => 'S', 'zip' => '1', 'city' => 'C', 'country' => 'SE'],
+            'placed_at' => now(),
+        ]);
+
+        $page = \Livewire\Livewire::actingAs($admin)
+            ->test(\App\Filament\Resources\Orders\Pages\EditOrder::class, ['record' => $order->id])
+            ->callAction('markShipped', data: [
+                'tracking_number' => 'PN999XYZ',
+                'tracking_url' => 'https://example.test/track/PN999XYZ',
+                'notify_customer' => true,
+            ])
+            ->assertHasNoErrors();
+
+        $order->refresh();
+        $this->assertSame(Order::STATUS_SHIPPED, $order->status);
+        $this->assertSame('shipped', $order->shipping_status);
+        $this->assertSame('PN999XYZ', $order->tracking_number);
+        $this->assertNotNull($order->shipped_at);
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\OrderShipped::class,
+            fn ($m) => $m->hasTo('customer@example.test')
+        );
+    }
+
+    public function test_admin_can_cancel_order(): void
+    {
+        $admin = \App\Models\User::create([
+            'name' => 'Admin', 'email' => 'admin2@example.test',
+            'password' => \Illuminate\Support\Facades\Hash::make('secret'),
+            'role' => \App\Models\User::ROLE_ADMIN,
+        ]);
+
+        $order = Order::create([
+            'order_number' => 'ORD-CXL-1',
+            'email' => 'c@e.t', 'currency' => 'SEK',
+            'subtotal_excl_vat' => 100, 'vat_total' => 25, 'grand_total' => 125,
+            'status' => Order::STATUS_PAID, 'payment_status' => 'paid',
+            'shipping_status' => 'not_shipped',
+            'payment_method' => 'invoice', 'shipping_method' => 'postnord',
+        ]);
+
+        \Livewire\Livewire::actingAs($admin)
+            ->test(\App\Filament\Resources\Orders\Pages\EditOrder::class, ['record' => $order->id])
+            ->callAction('cancelOrder')
+            ->assertHasNoErrors();
+
+        $this->assertSame(Order::STATUS_CANCELLED, $order->fresh()->status);
+    }
+
     public function test_robots_disallows_admin_and_lists_sitemap(): void
     {
         $this->get(route('robots'))

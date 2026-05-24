@@ -49,6 +49,12 @@ Route::middleware('web')->group(function () {
     Route::post('/register', [CustomerAuthController::class, 'register']);
     Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
+    // Password reset
+    Route::get('/password/forgot', [CustomerAuthController::class, 'showForgot'])->name('password.request');
+    Route::post('/password/forgot', [CustomerAuthController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/password/reset/{token}', [CustomerAuthController::class, 'showReset'])->name('password.reset');
+    Route::post('/password/reset', [CustomerAuthController::class, 'resetPassword'])->name('password.update');
+
     // Customer account (requires customer guard)
     Route::middleware('auth:customer')->group(function () {
         Route::get('/account', [AccountController::class, 'show'])->name('account.show');

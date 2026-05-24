@@ -12,8 +12,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'subtotal_excl_vat', 'vat_total', 'shipping_total',
     'discount_total', 'discount_code', 'grand_total',
     'status', 'payment_status', 'shipping_status',
-    'payment_method', 'payment_reference', 'shipping_method',
-    'shipping_address', 'billing_address', 'notes', 'placed_at',
+    'payment_method', 'payment_reference',
+    'shipping_method', 'tracking_number', 'tracking_url',
+    'shipping_address', 'billing_address', 'notes',
+    'placed_at', 'shipped_at', 'delivered_at',
 ])]
 class Order extends Model
 {
@@ -35,6 +37,8 @@ class Order extends Model
             'shipping_address' => 'array',
             'billing_address' => 'array',
             'placed_at' => 'datetime',
+            'shipped_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 
