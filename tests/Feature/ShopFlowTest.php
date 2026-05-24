@@ -830,6 +830,84 @@ class ShopFlowTest extends TestCase
         $this->assertSame(Order::STATUS_CANCELLED, $order->fresh()->status);
     }
 
+    public function test_review_submission_creates_published_review(): void
+    {
+        $product = Product::first();
+
+        $this->post(route('shop.review.store', $product->slug), [
+            'name' => 'Anna Andersson',
+            'email' => 'anna@example.test',
+            'rating' => 5,
+            'title' => 'Toppen!',
+            'body' => 'Bra produkt, snabb leverans.',
+        ])->assertRedirect();
+
+        $this->assertSame(1, \App\Models\ProductReview::count());
+        $review = \App\Models\ProductReview::first();
+        $this->assertSame(5, $review->rating);
+        $this->assertTrue($review->is_published);
+    }
+
+    public function test_review_moderation_when_auto_publish_off(): void
+    {
+        \App\Models\Setting::put('reviews.auto_publish', '0');
+        $product = Product::first();
+
+        $this->post(route('shop.review.store', $product->slug), [
+            'name' => 'A', 'email' => 'a@e.t', 'rating' => 4,
+        ]);
+
+        $this->assertFalse(\App\Models\ProductReview::first()->is_published);
+    }
+
+    public function test_review_honeypot_blocks_bot(): void
+    {
+        $product = Product::first();
+        $this->post(route('shop.review.store', $product->slug), [
+            'name' => 'Bot', 'email' => 'b@e.t', 'rating' => 5,
+            'website' => 'http://spam.example',
+        ]);
+        $this->assertSame(0, \App\Models\ProductReview::count());
+    }
+
+    public function test_review_verified_purchase_set_for_past_buyer(): void
+    {
+        $product = Product::first();
+
+        // Make this email buy the product first.
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('checkout.store'), [
+            'email' => 'buyer@e.t', 'name' => 'Buyer',
+            'street' => 'S', 'zip' => '1', 'city' => 'C', 'country' => 'SE',
+            'shipping_method' => 'pickup', 'payment_method' => 'invoice',
+        ])->assertRedirect();
+
+        $this->post(route('shop.review.store', $product->slug), [
+            'name' => 'Buyer', 'email' => 'buyer@e.t', 'rating' => 5,
+        ]);
+
+        $this->assertTrue(\App\Models\ProductReview::first()->is_verified_purchase);
+    }
+
+    public function test_product_page_includes_aggregate_rating_in_json_ld(): void
+    {
+        $product = Product::first();
+        \App\Models\ProductReview::create([
+            'product_id' => $product->id, 'name' => 'A', 'email' => 'a@e.t',
+            'rating' => 4, 'is_published' => true,
+        ]);
+        \App\Models\ProductReview::create([
+            'product_id' => $product->id, 'name' => 'B', 'email' => 'b@e.t',
+            'rating' => 5, 'is_published' => true,
+        ]);
+
+        $this->get(route('shop.product', $product->slug))
+            ->assertOk()
+            ->assertSee('"@type":"AggregateRating"', escape: false)
+            ->assertSee('"ratingValue":"4.5"', escape: false)
+            ->assertSee('"reviewCount":2', escape: false);
+    }
+
     public function test_robots_disallows_admin_and_lists_sitemap(): void
     {
         $this->get(route('robots'))

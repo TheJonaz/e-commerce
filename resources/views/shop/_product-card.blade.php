@@ -31,6 +31,12 @@
             <div class="product-card-cat">{{ $product->categories->first()->localized('name') }}</div>
         @endif
         <div class="product-card-name">{{ $product->localized('name') }}</div>
+        @if ($product->reviewCount() > 0)
+            <div style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--muted);">
+                @include('shop._stars', ['rating' => $product->averageRating(), 'size' => '0.75rem'])
+                <span>({{ $product->reviewCount() }})</span>
+            </div>
+        @endif
         <div class="product-card-foot">
             <span class="product-card-price">{{ App\Support\Money::format($product->displayPrice(), $currency) }}</span>
             <span class="product-card-vat">{{ $product->vatLabel() }}</span>

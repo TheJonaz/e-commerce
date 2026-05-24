@@ -5,6 +5,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\InstallController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Support\Installation;
@@ -28,6 +29,7 @@ Route::middleware('web')->group(function () {
 
     Route::get('/categories/{slug}', [ShopController::class, 'category'])->name('shop.category');
     Route::get('/products/{slug}', [ShopController::class, 'product'])->name('shop.product');
+    Route::post('/products/{product:slug}/review', [ReviewController::class, 'store'])->name('shop.review.store');
     Route::get('/search', [ShopController::class, 'search'])->name('shop.search');
     Route::get('/search/suggest', [ShopController::class, 'suggest'])->name('shop.suggest');
 

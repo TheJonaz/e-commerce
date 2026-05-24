@@ -33,6 +33,15 @@
         if ($product->gtin) {
             $jsonLdProduct['gtin'] = $product->gtin;
         }
+        if ($product->reviewCount() > 0) {
+            $jsonLdProduct['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => number_format($product->averageRating(), 1, '.', ''),
+                'reviewCount' => $product->reviewCount(),
+                'bestRating' => 5,
+                'worstRating' => 1,
+            ];
+        }
         // BreadcrumbList
         $crumbs = [['@type' => 'ListItem', 'position' => 1, 'name' => 'Hem', 'item' => url('/')]];
         if ($product->categories->isNotEmpty()) {
@@ -220,6 +229,133 @@
             @endif
         </div>
     </div>
+
+    {{-- Reviews --}}
+    @if ((bool) setting('reviews.enabled', '1'))
+        @php
+            $reviews = $product->reviews;
+            $avg = $product->averageRating();
+            $count = $reviews->count();
+        @endphp
+        <section style="margin: 3rem 0 0; padding-top: 2rem; border-top: 1px solid var(--border);">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.25rem;">Recensioner</h2>
+                @if ($count > 0)
+                    <div style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                        @include('shop._stars', ['rating' => $avg, 'size' => '1.1rem'])
+                        <span style="font-weight: 600; font-variant-numeric: tabular-nums;">{{ number_format($avg, 1, ',', ' ') }}</span>
+                        <span style="color: var(--muted); font-size: 0.9rem;">({{ $count }} {{ $count === 1 ? 'recension' : 'recensioner' }})</span>
+                    </div>
+                @endif
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 2.5rem; align-items: start;">
+                <div>
+                    @if ($reviews->isEmpty())
+                        <p style="color: var(--muted);">Inga recensioner än. Var den första!</p>
+                    @else
+                        <div style="display: grid; gap: 1.25rem;">
+                            @foreach ($reviews->take(10) as $r)
+                                <article style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem;">
+                                    <header style="display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.4rem;">
+                                        <div style="display: inline-flex; align-items: center; gap: 0.55rem;">
+                                            @include('shop._stars', ['rating' => $r->rating, 'size' => '0.95rem'])
+                                            <strong style="font-size: 0.95rem;">{{ $r->name }}</strong>
+                                            @if ($r->is_verified_purchase)
+                                                <span style="font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #dcfce7; color: #15803d; font-weight: 600;">Verifierat köp</span>
+                                            @endif
+                                        </div>
+                                        <time style="color: var(--muted); font-size: 0.8rem;" datetime="{{ $r->created_at->toIso8601String() }}">{{ $r->created_at->format('Y-m-d') }}</time>
+                                    </header>
+                                    @if ($r->title)
+                                        <div style="font-weight: 600; margin-bottom: 0.25rem;">{{ $r->title }}</div>
+                                    @endif
+                                    @if ($r->body)
+                                        <p style="margin: 0; color: var(--text);">{{ $r->body }}</p>
+                                    @endif
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <aside>
+                    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                        <h3 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1rem;">Skriv en recension</h3>
+
+                        @if (session('status'))
+                            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 0.55rem 0.85rem; border-radius: 8px; margin-bottom: 0.85rem; font-size: 0.875rem;">{{ session('status') }}</div>
+                        @endif
+
+                        @if ($errors->any())
+                            <div style="background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; padding: 0.55rem 0.85rem; border-radius: 8px; margin-bottom: 0.85rem; font-size: 0.85rem;">
+                                @foreach ($errors->all() as $error)
+                                    <div>{{ $error }}</div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('shop.review.store', $product->slug) }}" style="display: grid; gap: 0.75rem;">
+                            @csrf
+                            <input type="text" name="website" value="" autocomplete="off" tabindex="-1" style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
+
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.25rem;">Betyg</label>
+                                <div class="star-input" style="display: inline-flex; gap: 0.15rem; font-size: 1.6rem; color: #e2e8f0; cursor: pointer;">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        <label style="cursor: pointer; line-height: 1;">
+                                            <input type="radio" name="rating" value="{{ $i }}" {{ old('rating') == $i ? 'checked' : '' }} required style="position: absolute; opacity: 0; pointer-events: none;">
+                                            <span data-star="{{ $i }}">★</span>
+                                        </label>
+                                    @endfor
+                                </div>
+                            </div>
+
+                            <label style="font-size: 0.85rem;">Namn
+                                <input type="text" name="name" value="{{ old('name', auth('customer')->user()?->name ?? '') }}" required maxlength="120"
+                                    style="display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; font: inherit;">
+                            </label>
+                            <label style="font-size: 0.85rem;">E-post
+                                <input type="email" name="email" value="{{ old('email', auth('customer')->user()?->email ?? '') }}" required
+                                    style="display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; font: inherit;">
+                            </label>
+                            <label style="font-size: 0.85rem;">Rubrik
+                                <input type="text" name="title" value="{{ old('title') }}" maxlength="160"
+                                    style="display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; font: inherit;">
+                            </label>
+                            <label style="font-size: 0.85rem;">Din recension
+                                <textarea name="body" rows="4" maxlength="4000"
+                                    style="display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; resize: vertical;">{{ old('body') }}</textarea>
+                            </label>
+                            <button type="submit" class="btn btn-primary">Skicka recension</button>
+                        </form>
+                        <script>
+                            (function () {
+                                document.querySelectorAll('.star-input').forEach(group => {
+                                    const stars = group.querySelectorAll('[data-star]');
+                                    const inputs = group.querySelectorAll('input[type="radio"]');
+                                    function paint(active) {
+                                        stars.forEach((s, i) => s.style.color = (i + 1) <= active ? '#f59e0b' : '#e2e8f0');
+                                    }
+                                    stars.forEach((s, i) => {
+                                        const label = s.closest('label');
+                                        label.addEventListener('mouseenter', () => paint(i + 1));
+                                        label.addEventListener('mouseleave', () => {
+                                            const checked = Array.from(inputs).findIndex(r => r.checked);
+                                            paint(checked >= 0 ? checked + 1 : 0);
+                                        });
+                                        label.addEventListener('click', () => paint(i + 1));
+                                    });
+                                    const initial = Array.from(inputs).findIndex(r => r.checked);
+                                    if (initial >= 0) paint(initial + 1);
+                                });
+                            })();
+                        </script>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    @endif
 
     @if ($related->isNotEmpty())
         <h2 style="font-size: 1.1rem; margin: 3rem 0 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">Liknande produkter</h2>

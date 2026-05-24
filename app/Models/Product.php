@@ -47,6 +47,31 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class)->orderBy('position');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class)->where('is_published', true)->latest();
+    }
+
+    public function averageRating(): float
+    {
+        if ($this->relationLoaded('reviews')) {
+            $items = $this->reviews;
+        } else {
+            $items = $this->reviews()->get(['rating']);
+        }
+
+        if ($items->isEmpty()) return 0.0;
+
+        return round($items->avg('rating'), 1);
+    }
+
+    public function reviewCount(): int
+    {
+        return $this->relationLoaded('reviews')
+            ? $this->reviews->count()
+            : $this->reviews()->count();
+    }
+
     public function activeVariants(): HasMany
     {
         return $this->variants()->where('is_active', true);

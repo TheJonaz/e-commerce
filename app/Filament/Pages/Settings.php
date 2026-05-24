@@ -72,6 +72,8 @@ class Settings extends Page implements HasSchemas
             'cookie_banner_enabled' => (bool) Setting::get('cookie.banner_enabled', '1'),
             'cookie_text' => Setting::get('cookie.text', 'Vi använder cookies för att förbättra din upplevelse och förstå hur sajten används. Du kan välja att acceptera eller avvisa analys-cookies.'),
             'cookie_policy_url' => Setting::get('cookie.policy_url', ''),
+            'reviews_enabled' => (bool) Setting::get('reviews.enabled', '1'),
+            'reviews_auto_publish' => (bool) Setting::get('reviews.auto_publish', '1'),
         ]);
     }
 
@@ -159,6 +161,18 @@ class Settings extends Page implements HasSchemas
                         TextInput::make('seo_ga_id')
                             ->label('Google Analytics ID')
                             ->placeholder('G-XXXXXXXXXX'),
+                    ]),
+
+                Section::make('Recensioner')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('reviews_enabled')
+                            ->label('Tillåt recensioner på produktsidor')
+                            ->default(true),
+                        Toggle::make('reviews_auto_publish')
+                            ->label('Publicera nya recensioner direkt')
+                            ->helperText('Stäng av för att granska innan visning.')
+                            ->default(true),
                     ]),
 
                 Section::make('Cookies & samtycke')
@@ -298,6 +312,8 @@ class Settings extends Page implements HasSchemas
                         'cookie.banner_enabled' => $data['cookie_banner_enabled'] ? '1' : '0',
                         'cookie.text' => $data['cookie_text'] ?? '',
                         'cookie.policy_url' => $data['cookie_policy_url'] ?? '',
+                        'reviews.enabled' => $data['reviews_enabled'] ? '1' : '0',
+                        'reviews.auto_publish' => $data['reviews_auto_publish'] ? '1' : '0',
                     ]);
 
                     Notification::make()
