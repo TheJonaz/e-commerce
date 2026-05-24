@@ -73,4 +73,26 @@ class CartController extends Controller
 
         return redirect()->route('cart.show');
     }
+
+    public function applyDiscount(Request $request): RedirectResponse
+    {
+        $code = (string) $request->input('code', '');
+        if ($code === '') {
+            return back()->withErrors(['discount' => 'Ange en kod.']);
+        }
+
+        $result = $this->cart->applyDiscount($code);
+        if (! $result['valid']) {
+            return back()->withErrors(['discount' => $result['reason'] ?? 'Koden kunde inte användas.']);
+        }
+
+        return back()->with('status', 'Rabattkod aktiverad.');
+    }
+
+    public function removeDiscount(): RedirectResponse
+    {
+        $this->cart->removeDiscount();
+
+        return back();
+    }
 }

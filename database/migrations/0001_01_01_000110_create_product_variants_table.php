@@ -30,7 +30,12 @@ return new class extends Migration
         });
 
         // Drop the old (cart_id, product_id) unique so the same product can live
-        // in a single cart multiple times (one row per variant).
+        // in a single cart multiple times (one row per variant). MySQL refuses
+        // to drop it while cart_id's FK depends on the unique for its index,
+        // so add a dedicated cart_id index first.
+        Schema::table('cart_items', function (Blueprint $table) {
+            $table->index('cart_id', 'cart_items_cart_id_index');
+        });
         Schema::table('cart_items', function (Blueprint $table) {
             $table->dropUnique(['cart_id', 'product_id']);
         });

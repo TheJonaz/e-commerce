@@ -31,6 +31,8 @@ Route::middleware('web')->group(function () {
     Route::post('/cart/add/{product:slug}', [CartController::class, 'add'])->name('cart.add');
     Route::patch('/cart/items/{item}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/items/{item}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::post('/cart/discount', [CartController::class, 'applyDiscount'])->name('cart.discount.apply');
+    Route::delete('/cart/discount', [CartController::class, 'removeDiscount'])->name('cart.discount.remove');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');

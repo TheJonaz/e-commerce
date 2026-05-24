@@ -563,6 +563,94 @@ class ShopFlowTest extends TestCase
         $this->assertSame(2, \App\Models\CartItem::count());
     }
 
+    public function test_discount_percent_applies_to_cart_totals(): void
+    {
+        \App\Models\DiscountCode::create([
+            'code' => 'SAVE20', 'type' => 'percent', 'value' => 20, 'is_active' => true,
+        ]);
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 4]); // 4 × 125 = 500
+
+        $this->post(route('cart.discount.apply'), ['code' => 'save20'])
+            ->assertRedirect();
+
+        $totals = app(\App\Support\CartService::class)->totals();
+        $this->assertSame('SAVE20', $totals['discount_code']);
+        $this->assertSame(100.0, $totals['discount']);
+        $this->assertSame(400.0, $totals['grand']);
+    }
+
+    public function test_discount_fixed_capped_at_order_amount(): void
+    {
+        \App\Models\DiscountCode::create([
+            'code' => 'GIANT', 'type' => 'fixed', 'value' => 9999, 'is_active' => true,
+        ]);
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('cart.discount.apply'), ['code' => 'GIANT']);
+
+        $totals = app(\App\Support\CartService::class)->totals();
+        $this->assertSame(125.0, $totals['discount']);
+        $this->assertSame(0.0, $totals['grand']);
+    }
+
+    public function test_discount_rejected_when_inactive(): void
+    {
+        \App\Models\DiscountCode::create([
+            'code' => 'OFF', 'type' => 'percent', 'value' => 10, 'is_active' => false,
+        ]);
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('cart.discount.apply'), ['code' => 'OFF'])
+            ->assertSessionHasErrors('discount');
+    }
+
+    public function test_discount_rejected_when_expired(): void
+    {
+        \App\Models\DiscountCode::create([
+            'code' => 'EXPIRED', 'type' => 'percent', 'value' => 10,
+            'valid_until' => now()->subDay(), 'is_active' => true,
+        ]);
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('cart.discount.apply'), ['code' => 'EXPIRED'])
+            ->assertSessionHasErrors('discount');
+    }
+
+    public function test_discount_rejected_below_min_order(): void
+    {
+        \App\Models\DiscountCode::create([
+            'code' => 'BIGORDER', 'type' => 'percent', 'value' => 10,
+            'min_order_amount' => 500, 'is_active' => true,
+        ]);
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('cart.discount.apply'), ['code' => 'BIGORDER'])
+            ->assertSessionHasErrors('discount');
+    }
+
+    public function test_discount_increments_times_used_on_order(): void
+    {
+        $code = \App\Models\DiscountCode::create([
+            'code' => 'USEME', 'type' => 'percent', 'value' => 10, 'is_active' => true,
+        ]);
+        $product = Product::first();
+        $this->post(route('cart.add', $product->slug), ['qty' => 1]);
+        $this->post(route('cart.discount.apply'), ['code' => 'USEME']);
+
+        $this->post(route('checkout.store'), [
+            'email' => 'b@e.t', 'name' => 'B',
+            'street' => 'S', 'zip' => '1', 'city' => 'C', 'country' => 'SE',
+            'shipping_method' => 'pickup', 'payment_method' => 'invoice',
+        ])->assertRedirect();
+
+        $code->refresh();
+        $this->assertSame(1, $code->times_used);
+        $order = \App\Models\Order::first();
+        $this->assertSame('USEME', $order->discount_code);
+        $this->assertGreaterThan(0, (float) $order->discount_total);
+    }
+
     public function test_variant_options_snapshot_stored_on_order(): void
     {
         $product = Product::create([

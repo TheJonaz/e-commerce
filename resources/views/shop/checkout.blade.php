@@ -128,6 +128,10 @@
                 <div>{{ ($totals['shipping'] ?? 0) > 0 ? App\Support\Money::format($totals['shipping'], $cart->currency) : 'Gratis' }}</div>
                 <div style="color: var(--muted);">{{ __('shop.totals.vat') }}</div>
                 <div>{{ App\Support\Money::format($totals['vat'], $cart->currency) }}</div>
+                @if (($totals['discount'] ?? 0) > 0)
+                    <div style="color: #15803d;">Rabatt ({{ $totals['discount_code'] }})</div>
+                    <div style="color: #15803d;">−{{ App\Support\Money::format($totals['discount'], $cart->currency) }}</div>
+                @endif
                 <div style="font-weight: 700; font-size: 1rem;">{{ __('shop.totals.total') }}</div>
                 <div style="font-weight: 700; font-size: 1rem; color: var(--price);">{{ App\Support\Money::format($totals['grand'], $cart->currency) }}</div>
             </div>

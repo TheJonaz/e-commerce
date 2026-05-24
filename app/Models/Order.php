@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'customer_id', 'order_number', 'email', 'currency',
-    'subtotal_excl_vat', 'vat_total', 'shipping_total', 'discount_total', 'grand_total',
+    'subtotal_excl_vat', 'vat_total', 'shipping_total',
+    'discount_total', 'discount_code', 'grand_total',
     'status', 'payment_status', 'shipping_status',
     'payment_method', 'payment_reference', 'shipping_method',
     'shipping_address', 'billing_address', 'notes', 'placed_at',

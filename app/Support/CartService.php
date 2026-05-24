@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\DiscountCode;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\Session;
@@ -98,7 +99,7 @@ class CartService
         $cart = $this->current();
 
         if (! $cart || $cart->items->isEmpty()) {
-            return ['count' => 0, 'subtotal' => 0.0, 'vat' => 0.0, 'grand' => 0.0];
+            return ['count' => 0, 'subtotal' => 0.0, 'vat' => 0.0, 'discount' => 0.0, 'discount_code' => null, 'grand' => 0.0];
         }
 
         $lines = $cart->items->map(fn ($i) => [
@@ -108,12 +109,64 @@ class CartService
         ])->all();
 
         $summary = Vat::summarize($lines);
+        $grandBeforeDiscount = $summary['grand_total'];
+
+        $discount = 0.0;
+        $appliedCode = null;
+        if ($cart->discount_code) {
+            $code = DiscountCode::where('code', $cart->discount_code)->first();
+            if ($code && $code->checkValidity($grandBeforeDiscount)['valid']) {
+                $discount = $code->discountFor($grandBeforeDiscount);
+                $appliedCode = $code->code;
+            }
+        }
 
         return [
             'count' => (int) $cart->items->sum('qty'),
             'subtotal' => $summary['subtotal_excl_vat'],
             'vat' => $summary['vat_total'],
-            'grand' => $summary['grand_total'],
+            'discount' => $discount,
+            'discount_code' => $appliedCode,
+            'grand' => round($grandBeforeDiscount - $discount, 2),
         ];
+    }
+
+    /** Try to apply a discount code to the current cart. Returns [valid:bool, reason?:string]. */
+    public function applyDiscount(string $code): array
+    {
+        $cart = $this->current(create: true);
+        $code = strtoupper(trim($code));
+
+        $discount = DiscountCode::where('code', $code)->first();
+        if (! $discount) {
+            return ['valid' => false, 'reason' => 'Ogiltig kod.'];
+        }
+
+        // Validate with current cart amount (pre-discount).
+        $cart->load('items');
+        $lines = $cart->items->map(fn ($i) => [
+            'qty' => $i->qty,
+            'unit_price_incl_vat' => (float) $i->price_snapshot,
+            'vat_rate' => (float) $i->vat_rate_snapshot,
+        ])->all();
+        $summary = Vat::summarize($lines);
+        $check = $discount->checkValidity($summary['grand_total']);
+        if (! $check['valid']) {
+            return $check;
+        }
+
+        $cart->discount_code = $discount->code;
+        $cart->save();
+
+        return ['valid' => true];
+    }
+
+    public function removeDiscount(): void
+    {
+        $cart = $this->current();
+        if (! $cart) return;
+
+        $cart->discount_code = null;
+        $cart->save();
     }
 }

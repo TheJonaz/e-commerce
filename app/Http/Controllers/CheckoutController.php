@@ -121,7 +121,8 @@ class CheckoutController extends Controller
                 'subtotal_excl_vat' => $totals['subtotal'],
                 'vat_total' => $totals['vat'],
                 'shipping_total' => $shippingCost,
-                'discount_total' => 0,
+                'discount_total' => $totals['discount'] ?? 0,
+                'discount_code' => $totals['discount_code'] ?? null,
                 'grand_total' => $totals['grand'],
                 'status' => Order::STATUS_PENDING,
                 'payment_status' => 'unpaid',
@@ -164,6 +165,11 @@ class CheckoutController extends Controller
 
             return $order;
         });
+
+        // Atomic increment so concurrent checkouts can't exceed max_uses.
+        if ($order->discount_code) {
+            \App\Models\DiscountCode::where('code', $order->discount_code)->increment('times_used');
+        }
 
         $redirect = $payment->process($order);
 
@@ -224,12 +230,26 @@ class CheckoutController extends Controller
         }
 
         $sum = Vat::summarize($lines);
+        $grandBeforeDiscount = $sum['grand_total'];
+
+        // Apply any active discount code on the cart.
+        $discount = 0.0;
+        $discountCode = null;
+        if ($cart->discount_code) {
+            $code = \App\Models\DiscountCode::where('code', $cart->discount_code)->first();
+            if ($code && $code->checkValidity($grandBeforeDiscount)['valid']) {
+                $discount = $code->discountFor($grandBeforeDiscount);
+                $discountCode = $code->code;
+            }
+        }
 
         return [
             'subtotal' => $sum['subtotal_excl_vat'],
             'vat' => $sum['vat_total'],
             'shipping' => $shippingGross,
-            'grand' => $sum['grand_total'],
+            'discount' => $discount,
+            'discount_code' => $discountCode,
+            'grand' => round($grandBeforeDiscount - $discount, 2),
         ];
     }
 

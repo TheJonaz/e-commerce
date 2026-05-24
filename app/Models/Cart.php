@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['customer_id', 'session_id', 'currency'])]
+#[Fillable(['customer_id', 'session_id', 'currency', 'discount_code'])]
 class Cart extends Model
 {
     public function customer(): BelongsTo
