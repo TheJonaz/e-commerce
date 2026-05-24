@@ -4,7 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? setting('shop.name', config('app.name')) }}</title>
+
+    @php
+        $shopName = setting('shop.name', config('app.name'));
+        $pageTitle = ($title ?? null) ? ($title . ' — ' . $shopName) : $shopName;
+        $pageDesc = $description ?? "Webshop {$shopName}. Modulär e-handel byggd på Open E-commerce.";
+        $pageUrl = $canonicalUrl ?? url()->current();
+        $pageImage = $ogImage ?? null;
+        $pageType = $ogType ?? 'website';
+    @endphp
+
+    <title>{{ $pageTitle }}</title>
+    <link rel="canonical" href="{{ $pageUrl }}">
+    <meta name="description" content="{{ $pageDesc }}">
+
+    {{-- Open Graph --}}
+    <meta property="og:type" content="{{ $pageType }}">
+    <meta property="og:site_name" content="{{ $shopName }}">
+    <meta property="og:title" content="{{ $pageTitle }}">
+    <meta property="og:description" content="{{ $pageDesc }}">
+    <meta property="og:url" content="{{ $pageUrl }}">
+    <meta property="og:locale" content="{{ app()->getLocale() === 'sv' ? 'sv_SE' : 'en_US' }}">
+    @if ($pageImage)
+        <meta property="og:image" content="{{ $pageImage }}">
+    @endif
+
+    {{-- Twitter --}}
+    <meta name="twitter:card" content="{{ $pageImage ? 'summary_large_image' : 'summary' }}">
+    <meta name="twitter:title" content="{{ $pageTitle }}">
+    <meta name="twitter:description" content="{{ $pageDesc }}">
+    @if ($pageImage)
+        <meta name="twitter:image" content="{{ $pageImage }}">
+    @endif
+
+    @stack('head')
     <style>
         :root {
             --bg: #fafaf9;

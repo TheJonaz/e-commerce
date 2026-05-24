@@ -629,6 +629,49 @@ class ShopFlowTest extends TestCase
             ->assertSessionHasErrors('discount');
     }
 
+    public function test_product_page_has_seo_tags_and_json_ld(): void
+    {
+        $product = Product::first();
+
+        $response = $this->get(route('shop.product', $product->slug));
+        $response->assertOk();
+        $response->assertSee('<link rel="canonical"', escape: false);
+        $response->assertSee('<meta property="og:type" content="product">', escape: false);
+        $response->assertSee('<meta property="og:title"', escape: false);
+        $response->assertSee('"@type":"Product"', escape: false);
+        $response->assertSee('"@type":"BreadcrumbList"', escape: false);
+        $response->assertSee('https://schema.org/InStock', escape: false);
+    }
+
+    public function test_category_page_has_canonical_and_title(): void
+    {
+        $this->get(route('shop.category', 'test'))
+            ->assertOk()
+            ->assertSee('<link rel="canonical"', escape: false)
+            ->assertSee('<meta property="og:title"', escape: false);
+    }
+
+    public function test_sitemap_lists_categories_and_products(): void
+    {
+        $product = Product::first();
+
+        $this->get(route('sitemap'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
+            ->assertSee('<urlset', escape: false)
+            ->assertSee(route('shop.product', $product->slug))
+            ->assertSee(route('shop.category', 'test'));
+    }
+
+    public function test_robots_disallows_admin_and_lists_sitemap(): void
+    {
+        $this->get(route('robots'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+            ->assertSee('Disallow: /admin')
+            ->assertSee('Sitemap: ' . url('/sitemap.xml'));
+    }
+
     public function test_discount_increments_times_used_on_order(): void
     {
         $code = \App\Models\DiscountCode::create([

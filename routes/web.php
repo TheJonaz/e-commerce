@@ -6,6 +6,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\SitemapController;
 use App\Support\Installation;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,9 @@ Route::middleware('web')->group(function () {
 
         return app(ShopController::class)->home();
     });
+
+    Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+    Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
     Route::get('/categories/{slug}', [ShopController::class, 'category'])->name('shop.category');
     Route::get('/products/{slug}', [ShopController::class, 'product'])->name('shop.product');

@@ -1,3 +1,10 @@
+@php
+    $title = $category->localized('name');
+    $description = $category->localized('description')
+        ?: 'Produkter i kategorin ' . $category->localized('name') . ' hos ' . setting('shop.name', config('app.name')) . '.';
+    $canonicalUrl = route('shop.category', $category->slug);
+@endphp
+
 @extends('layouts.shop')
 
 @section('content')

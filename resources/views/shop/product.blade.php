@@ -1,4 +1,46 @@
+@php
+    $title = $product->localized('name');
+    $description = $product->localized('short_description')
+        ?: \Illuminate\Support\Str::limit(strip_tags($product->localized('description')), 160)
+        ?: $product->localized('name');
+    $canonicalUrl = route('shop.product', $product->slug);
+    $ogImage = $product->imageUrl() ? \Illuminate\Support\Str::startsWith($product->imageUrl(), 'http') ? $product->imageUrl() : url($product->imageUrl()) : null;
+    $ogType = 'product';
+@endphp
+
 @extends('layouts.shop')
+
+@push('head')
+    {{-- Schema.org Product --}}
+    @php
+        $stockStatus = ($product->stock === null || $product->stock > 0) ? 'InStock' : 'OutOfStock';
+        $jsonLdProduct = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $product->localized('name'),
+            'description' => $description,
+            'sku' => (string) ($product->sku ?: $product->id),
+            'image' => $ogImage ? [$ogImage] : [],
+            'offers' => [
+                '@type' => 'Offer',
+                'priceCurrency' => setting('shop.currency', 'SEK'),
+                'price' => number_format((float) $product->price, 2, '.', ''),
+                'availability' => "https://schema.org/{$stockStatus}",
+                'url' => $canonicalUrl,
+            ],
+        ];
+        // BreadcrumbList
+        $crumbs = [['@type' => 'ListItem', 'position' => 1, 'name' => 'Hem', 'item' => url('/')]];
+        if ($product->categories->isNotEmpty()) {
+            $cat = $product->categories->first();
+            $crumbs[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $cat->localized('name'), 'item' => route('shop.category', $cat->slug)];
+        }
+        $crumbs[] = ['@type' => 'ListItem', 'position' => count($crumbs) + 1, 'name' => $product->localized('name'), 'item' => $canonicalUrl];
+        $jsonLdBreadcrumb = ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => $crumbs];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($jsonLdProduct, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    <script type="application/ld+json">{!! json_encode($jsonLdBreadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+@endpush
 
 @section('content')
     <div class="breadcrumbs">
