@@ -46,12 +46,20 @@
     @endif
 
     @if ($gaId)
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+        {{-- Google Analytics — loads dynamically only after consent (see consent banner script). --}}
         <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '{{ $gaId }}');
+            (function () {
+                if (localStorage.getItem('cookie_consent') !== 'accepted') return;
+                var s = document.createElement('script');
+                s.async = true;
+                s.src = 'https://www.googletagmanager.com/gtag/js?id={{ $gaId }}';
+                document.head.appendChild(s);
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                window.gtag = gtag;
+                gtag('js', new Date());
+                gtag('config', '{{ $gaId }}');
+            })();
         </script>
     @endif
 
@@ -135,6 +143,28 @@
         }
         .toast.shown { transform: translateX(0); opacity: 1; }
         .toast::before { content: '✓'; font-weight: 700; }
+
+        .cookie-banner {
+            position: fixed; left: 1rem; right: 1rem; bottom: 1rem;
+            max-width: 720px; margin: 0 auto;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.18);
+            z-index: 120;
+            display: none;
+        }
+        .cookie-banner.show { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        .cookie-banner p { flex: 1 1 320px; font-size: 0.875rem; color: var(--text); margin: 0; }
+        .cookie-banner a { color: var(--primary); text-decoration: underline; }
+        .cookie-banner-actions { display: inline-flex; gap: 0.5rem; flex-shrink: 0; }
+        .cookie-banner button {
+            padding: 0.5rem 1rem; border-radius: 8px;
+            font: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+            border: 1px solid var(--border); background: var(--card); color: var(--text);
+        }
+        .cookie-banner button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .cookie-banner button:hover { background: var(--accent); }
+        .cookie-banner button.primary:hover { background: var(--primary-hover); }
 
         main { padding: 2rem 0 4rem; }
         .page-head { margin-bottom: 1.5rem; }
@@ -264,6 +294,42 @@
     </main>
 
     <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    @if ((bool) setting('cookie.banner_enabled', '1'))
+        @php
+            $cookieText = setting('cookie.text', 'Vi använder cookies för att förbättra din upplevelse.');
+            $cookiePolicy = setting('cookie.policy_url', '');
+        @endphp
+        <div id="cookie-banner" class="cookie-banner" role="dialog" aria-label="Cookie-samtycke">
+            <p>
+                {{ $cookieText }}
+                @if ($cookiePolicy)
+                    <a href="{{ $cookiePolicy }}">Läs mer</a>
+                @endif
+            </p>
+            <div class="cookie-banner-actions">
+                <button type="button" id="cookie-reject">Avvisa</button>
+                <button type="button" id="cookie-accept" class="primary">Acceptera</button>
+            </div>
+        </div>
+        <script>
+            (function () {
+                const banner = document.getElementById('cookie-banner');
+                if (! banner) return;
+                if (! localStorage.getItem('cookie_consent')) {
+                    banner.classList.add('show');
+                }
+                function setConsent(choice) {
+                    localStorage.setItem('cookie_consent', choice);
+                    banner.classList.remove('show');
+                    // Reload so that GA can fire on this page view if accepted.
+                    if (choice === 'accepted') location.reload();
+                }
+                document.getElementById('cookie-accept').addEventListener('click', () => setConsent('accepted'));
+                document.getElementById('cookie-reject').addEventListener('click', () => setConsent('rejected'));
+            })();
+        </script>
+    @endif
 
     <footer class="site">
         <div class="container">

@@ -689,6 +689,38 @@ class ShopFlowTest extends TestCase
             ->assertSee('<meta name="google-site-verification" content="verify123token">', escape: false);
     }
 
+    public function test_cookie_banner_rendered_when_enabled(): void
+    {
+        \App\Models\Setting::put('cookie.banner_enabled', '1');
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('id="cookie-banner"', escape: false)
+            ->assertSee('id="cookie-accept"', escape: false)
+            ->assertSee('id="cookie-reject"', escape: false);
+    }
+
+    public function test_cookie_banner_hidden_when_disabled(): void
+    {
+        \App\Models\Setting::put('cookie.banner_enabled', '0');
+
+        $this->get('/')
+            ->assertOk()
+            ->assertDontSee('id="cookie-banner"', escape: false);
+    }
+
+    public function test_ga_script_is_gated_behind_consent(): void
+    {
+        \App\Models\Setting::put('seo.ga_id', 'G-TESTABC');
+
+        $response = $this->get('/');
+        $response->assertOk();
+        // GA bootstrap is wrapped in a localStorage check, not loaded synchronously.
+        $response->assertSee("localStorage.getItem('cookie_consent') !== 'accepted'", escape: false);
+        // No raw <script src="googletagmanager"> in the HTML — it's injected only after consent.
+        $response->assertDontSee('<script async src="https://www.googletagmanager.com', escape: false);
+    }
+
     public function test_robots_disallows_admin_and_lists_sitemap(): void
     {
         $this->get(route('robots'))

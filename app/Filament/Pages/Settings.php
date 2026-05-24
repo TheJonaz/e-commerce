@@ -69,6 +69,9 @@ class Settings extends Page implements HasSchemas
             'seo_default_og_image' => Setting::get('seo.default_og_image', ''),
             'seo_google_verification' => Setting::get('seo.google_verification', ''),
             'seo_ga_id' => Setting::get('seo.ga_id', ''),
+            'cookie_banner_enabled' => (bool) Setting::get('cookie.banner_enabled', '1'),
+            'cookie_text' => Setting::get('cookie.text', 'Vi använder cookies för att förbättra din upplevelse och förstå hur sajten används. Du kan välja att acceptera eller avvisa analys-cookies.'),
+            'cookie_policy_url' => Setting::get('cookie.policy_url', ''),
         ]);
     }
 
@@ -156,6 +159,24 @@ class Settings extends Page implements HasSchemas
                         TextInput::make('seo_ga_id')
                             ->label('Google Analytics ID')
                             ->placeholder('G-XXXXXXXXXX'),
+                    ]),
+
+                Section::make('Cookies & samtycke')
+                    ->description('GDPR-banner som visas tills besökaren godkänner eller avvisar. Google Analytics laddas bara när samtycke finns.')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('cookie_banner_enabled')
+                            ->label('Visa cookie-banner')
+                            ->default(true)
+                            ->columnSpanFull(),
+                        \Filament\Forms\Components\Textarea::make('cookie_text')
+                            ->label('Bannertext')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        TextInput::make('cookie_policy_url')
+                            ->label('URL till cookie-policy (valfri)')
+                            ->placeholder('/policy/cookies')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Bank transfer')
@@ -274,6 +295,9 @@ class Settings extends Page implements HasSchemas
                         'seo.default_og_image' => $data['seo_default_og_image'] ?? '',
                         'seo.google_verification' => $data['seo_google_verification'] ?? '',
                         'seo.ga_id' => $data['seo_ga_id'] ?? '',
+                        'cookie.banner_enabled' => $data['cookie_banner_enabled'] ? '1' : '0',
+                        'cookie.text' => $data['cookie_text'] ?? '',
+                        'cookie.policy_url' => $data['cookie_policy_url'] ?? '',
                     ]);
 
                     Notification::make()
