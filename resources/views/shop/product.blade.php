@@ -1,8 +1,6 @@
 @php
-    $title = $product->localized('name');
-    $description = $product->localized('short_description')
-        ?: \Illuminate\Support\Str::limit(strip_tags($product->localized('description')), 160)
-        ?: $product->localized('name');
+    $title = $product->seoTitle();
+    $description = $product->seoDescription();
     $canonicalUrl = route('shop.product', $product->slug);
     $ogImage = $product->imageUrl() ? \Illuminate\Support\Str::startsWith($product->imageUrl(), 'http') ? $product->imageUrl() : url($product->imageUrl()) : null;
     $ogType = 'product';
@@ -29,6 +27,12 @@
                 'url' => $canonicalUrl,
             ],
         ];
+        if ($product->brand) {
+            $jsonLdProduct['brand'] = ['@type' => 'Brand', 'name' => $product->brand];
+        }
+        if ($product->gtin) {
+            $jsonLdProduct['gtin'] = $product->gtin;
+        }
         // BreadcrumbList
         $crumbs = [['@type' => 'ListItem', 'position' => 1, 'name' => 'Hem', 'item' => url('/')]];
         if ($product->categories->isNotEmpty()) {

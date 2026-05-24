@@ -1,7 +1,6 @@
 @php
-    $title = $category->localized('name');
-    $description = $category->localized('description')
-        ?: 'Produkter i kategorin ' . $category->localized('name') . ' hos ' . setting('shop.name', config('app.name')) . '.';
+    $title = $category->seoTitle();
+    $description = $category->seoDescription();
     $canonicalUrl = route('shop.category', $category->slug);
 @endphp
 

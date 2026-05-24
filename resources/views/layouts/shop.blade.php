@@ -7,11 +7,15 @@
 
     @php
         $shopName = setting('shop.name', config('app.name'));
+        $defaultDesc = setting('seo.default_description', "Webshop {$shopName}. Modulär e-handel byggd på Open E-commerce.");
+        $defaultOgImage = setting('seo.default_og_image', '');
         $pageTitle = ($title ?? null) ? ($title . ' — ' . $shopName) : $shopName;
-        $pageDesc = $description ?? "Webshop {$shopName}. Modulär e-handel byggd på Open E-commerce.";
+        $pageDesc = $description ?? $defaultDesc;
         $pageUrl = $canonicalUrl ?? url()->current();
-        $pageImage = $ogImage ?? null;
+        $pageImage = $ogImage ?? ($defaultOgImage ?: null);
         $pageType = $ogType ?? 'website';
+        $gscToken = setting('seo.google_verification', '');
+        $gaId = setting('seo.ga_id', '');
     @endphp
 
     <title>{{ $pageTitle }}</title>
@@ -35,6 +39,20 @@
     <meta name="twitter:description" content="{{ $pageDesc }}">
     @if ($pageImage)
         <meta name="twitter:image" content="{{ $pageImage }}">
+    @endif
+
+    @if ($gscToken)
+        <meta name="google-site-verification" content="{{ $gscToken }}">
+    @endif
+
+    @if ($gaId)
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '{{ $gaId }}');
+        </script>
     @endif
 
     @stack('head')

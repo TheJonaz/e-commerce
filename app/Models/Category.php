@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['parent_id', 'slug', 'name', 'description', 'position', 'is_active'])]
+#[Fillable(['parent_id', 'slug', 'name', 'description', 'meta_title', 'meta_description', 'position', 'is_active'])]
 class Category extends Model
 {
     protected function casts(): array
@@ -33,6 +33,25 @@ class Category extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class)->withPivot('position');
+    }
+
+    public function seoTitle(): string
+    {
+        return $this->meta_title ?: $this->localized('name');
+    }
+
+    public function seoDescription(): string
+    {
+        if ($this->meta_description) {
+            return $this->meta_description;
+        }
+
+        $desc = $this->localized('description');
+        if ($desc !== '') {
+            return \Illuminate\Support\Str::limit(strip_tags($desc), 160);
+        }
+
+        return 'Produkter i kategorin ' . $this->localized('name');
     }
 
     public function localized(string $field, ?string $locale = null): string

@@ -65,6 +65,10 @@ class Settings extends Page implements HasSchemas
             'postnord_free_threshold' => Setting::get('shipping.postnord.free_threshold', '0'),
             'postnord_intl_multiplier' => Setting::get('shipping.postnord.intl_multiplier', '2.0'),
             'postnord_lead_time' => Setting::get('shipping.postnord.lead_time', '2–4'),
+            'seo_default_description' => Setting::get('seo.default_description', ''),
+            'seo_default_og_image' => Setting::get('seo.default_og_image', ''),
+            'seo_google_verification' => Setting::get('seo.google_verification', ''),
+            'seo_ga_id' => Setting::get('seo.ga_id', ''),
         ]);
     }
 
@@ -129,6 +133,29 @@ class Settings extends Page implements HasSchemas
                 Section::make('Local pickup')
                     ->schema([
                         TextInput::make('pickup_address')->label('Pickup address (shown to customer)')->columnSpanFull(),
+                    ]),
+
+                Section::make('SEO & GEO')
+                    ->description('Site-globala värden som påverkar Google, sociala medier och AI-assistenter.')
+                    ->columns(2)
+                    ->schema([
+                        \Filament\Forms\Components\Textarea::make('seo_default_description')
+                            ->label('Standard-beskrivning')
+                            ->rows(2)
+                            ->maxLength(320)
+                            ->helperText('Används som meta-beskrivning på sidor utan egen text (hem, varukorg etc.).')
+                            ->columnSpanFull(),
+                        TextInput::make('seo_default_og_image')
+                            ->label('Standard Open Graph-bild (URL)')
+                            ->placeholder('https://example.com/og-image.jpg')
+                            ->helperText('Visas vid delning på sociala medier när sidan saknar egen bild. Rekommenderad storlek: 1200×630 px.')
+                            ->columnSpanFull(),
+                        TextInput::make('seo_google_verification')
+                            ->label('Google Search Console verification')
+                            ->placeholder('innehållet från meta-taggen google-site-verification'),
+                        TextInput::make('seo_ga_id')
+                            ->label('Google Analytics ID')
+                            ->placeholder('G-XXXXXXXXXX'),
                     ]),
 
                 Section::make('Bank transfer')
@@ -243,6 +270,10 @@ class Settings extends Page implements HasSchemas
                         'shipping.postnord.free_threshold' => $data['postnord_free_threshold'] ?? '0',
                         'shipping.postnord.intl_multiplier' => $data['postnord_intl_multiplier'] ?? '2.0',
                         'shipping.postnord.lead_time' => $data['postnord_lead_time'] ?? '2–4',
+                        'seo.default_description' => $data['seo_default_description'] ?? '',
+                        'seo.default_og_image' => $data['seo_default_og_image'] ?? '',
+                        'seo.google_verification' => $data['seo_google_verification'] ?? '',
+                        'seo.ga_id' => $data['seo_ga_id'] ?? '',
                     ]);
 
                     Notification::make()

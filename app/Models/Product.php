@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sku', 'slug', 'name', 'short_description', 'description',
     'image_path', 'price', 'vat_rate', 'stock', 'weight_grams',
     'type', 'is_active', 'settings',
+    'meta_title', 'meta_description', 'brand', 'gtin',
 ])]
 class Product extends Model
 {
@@ -101,6 +102,32 @@ class Product extends Model
         }
 
         return null;
+    }
+
+    /** Effective SEO title: custom meta_title or auto from name. */
+    public function seoTitle(): string
+    {
+        return $this->meta_title ?: $this->localized('name');
+    }
+
+    /** Effective SEO description: custom or auto from short_description / description. */
+    public function seoDescription(): string
+    {
+        if ($this->meta_description) {
+            return $this->meta_description;
+        }
+
+        $short = $this->localized('short_description');
+        if ($short !== '') {
+            return $short;
+        }
+
+        $long = $this->localized('description');
+        if ($long !== '') {
+            return \Illuminate\Support\Str::limit(strip_tags($long), 160);
+        }
+
+        return $this->localized('name');
     }
 
     public function localized(string $field, ?string $locale = null): string

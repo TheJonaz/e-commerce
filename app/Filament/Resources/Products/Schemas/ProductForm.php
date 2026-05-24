@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
 use App\Support\Vat;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
@@ -11,6 +13,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Str;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -104,6 +109,52 @@ class ProductForm
                         ->label('Vikt (g)')
                         ->numeric()->minValue(0)
                         ->helperText('Används av viktbaserade fraktmoduler (t.ex. PostNord).'),
+                ]),
+
+            Section::make('SEO & GEO')
+                ->description('Söktitel och beskrivning som visas i Google och delas på sociala medier. Lämna tomt för auto-genererade värden från produktens namn/beskrivning.')
+                ->columns(2)
+                ->schema([
+                    Actions::make([
+                        Action::make('autofillSeo')
+                            ->label('Auto-fyll från produktdata')
+                            ->icon('heroicon-m-sparkles')
+                            ->color('primary')
+                            ->action(function (Set $set, Get $get) {
+                                $names = (array) ($get('name') ?? []);
+                                $shorts = (array) ($get('short_description') ?? []);
+                                $descs = (array) ($get('description') ?? []);
+                                $name = $names['sv'] ?? array_values($names)[0] ?? '';
+                                $short = $shorts['sv'] ?? array_values($shorts)[0] ?? '';
+                                $desc = $descs['sv'] ?? array_values($descs)[0] ?? '';
+                                $shopName = setting('shop.name', config('app.name'));
+
+                                $title = $name ? ($name . ' — ' . $shopName) : $shopName;
+                                $description = $short ?: Str::limit(strip_tags($desc), 155);
+
+                                $set('meta_title', $title);
+                                $set('meta_description', $description);
+                                $set('brand', setting('shop.name', config('app.name')));
+                            }),
+                    ])->columnSpanFull(),
+
+                    TextInput::make('meta_title')
+                        ->label('SEO-titel')
+                        ->maxLength(60)
+                        ->helperText('Max ~60 tecken. Visas som sidans titel i Google.')
+                        ->columnSpanFull(),
+                    Textarea::make('meta_description')
+                        ->label('SEO-beskrivning')
+                        ->maxLength(160)
+                        ->rows(2)
+                        ->helperText('Max ~160 tecken. Visas under titeln i sökresultat och vid delning.')
+                        ->columnSpanFull(),
+                    TextInput::make('brand')
+                        ->label('Varumärke')
+                        ->helperText('Används i Schema.org Product (Google Shopping, AI-assistenter).'),
+                    TextInput::make('gtin')
+                        ->label('GTIN / EAN / UPC')
+                        ->helperText('Streckkod. Förbättrar produktens synlighet i Google Shopping.'),
                 ]),
 
             Section::make('Variants')

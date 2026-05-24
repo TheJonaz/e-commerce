@@ -663,6 +663,32 @@ class ShopFlowTest extends TestCase
             ->assertSee(route('shop.category', 'test'));
     }
 
+    public function test_product_uses_custom_meta_when_set(): void
+    {
+        $product = Product::first();
+        $product->meta_title = 'Min skräddade SEO-titel';
+        $product->meta_description = 'En specifik beskrivning som ska visas i Google.';
+        $product->brand = 'Acme';
+        $product->gtin = '7350001234567';
+        $product->save();
+
+        $this->get(route('shop.product', $product->slug))
+            ->assertOk()
+            ->assertSee('Min skräddade SEO-titel', escape: false)
+            ->assertSee('En specifik beskrivning som ska visas i Google.', escape: false)
+            ->assertSee('"brand":{"@type":"Brand","name":"Acme"}', escape: false)
+            ->assertSee('"gtin":"7350001234567"', escape: false);
+    }
+
+    public function test_layout_emits_google_verification_when_set(): void
+    {
+        \App\Models\Setting::put('seo.google_verification', 'verify123token');
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('<meta name="google-site-verification" content="verify123token">', escape: false);
+    }
+
     public function test_robots_disallows_admin_and_lists_sitemap(): void
     {
         $this->get(route('robots'))
